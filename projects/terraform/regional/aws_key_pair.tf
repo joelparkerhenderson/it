@@ -2,6 +2,44 @@
 #
 # Key Pair
 #
+# To create a key pair, you can use either the local command line,
+# or the AWS console. We prefer to use the local command line,
+# because the private information stays on our local system.
+#
+#
+# ## To create a key pair via local command line
+#
+# Command:
+#
+#     ssh-keygen -t rsa -b 4096
+# 
+# We prefer to generate our keys via our tool `ssh-keygen-pro`:
+#
+#   * https://github.com/sixarm/ssh-keygen-pro
+#
+# The tool creates a name convention that helps with tracking.
+#
+#
+# ## Why use the RSA algorithm?
+#
+# AWS key pairs currently (2020-03-25) must use the RSA algorithm,
+# and cannot use any other algorithm such as DSA, ECDSA, Ed25519, etc.
+#
+# If you try to upload a non-RSA public key, then you will get an error.
+#
+# Example error message for a DSA key:
+#
+#     Amazon EC2 does not accept DSA keys. Make sure your 
+#     key generator is set up to create RSA keys.
+#
+# Example error message for another algorithm key:
+#
+#     Error import KeyPair: InvalidKey.Format: 
+#     Key is not in valid OpenSSH public key format
+#
+#
+# ## To create a key pair via the AWS console
+#
 # To create a key pair via the the AWS console:
 #
 #   * Use the AWS console to create a key pair such as `administrator`.
@@ -58,6 +96,6 @@
 ###
 
 resource "aws_key_pair" "administrator" {
-  key_name   = "administrator"
-  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCPdH+fCvA/wzE/V5Uj679QcsRP8mx29GelCzGgFcatLlfStdT6gg0VTJbdSsfRGkAHKlKD8xTKBgckGUGgnHT9tp7VesBYLSSbhHFMuk54/KXH3FH9/ZthQhSHh1uEuPdNcLdbWtxUI+vnI8yQxc04mjbnXE97j8UiUJlJoayq86v+DxHv5d4godGrowUhVHNvJJAUyUxZYXcTdPtkOSk02drxbd2sstoVAvNokNGeJx7R7mTVhr23q4kJnPxU4IEn7lp1FhWiK7YEOxz3+/espM4IxU6mKRQHZzX7rozGoBlpbAj5Ds7cBZhF9Wo99Y2lmIP2kFoLqwg4bcG6S4jL"
+  key_name   = "administrator@joelparkerhenderson.com=98393eb0bbd83baa8eae3404da29978e"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQChsDTEXGTPtG1IpESzFbQEEbt/ecl9j5EhY0QYIl/+hl67Udsmv3X87NMjV1I4q5qTLc4kfXCWIRstCVjBtcYX4xaBtW8xHSMlldeplFkFVR4iaxPY4OcJJQGkcA6F0UM5Bnva4FwPCw/HFohqs4GwIy0kSKbt9JeFpn0v2i9x9V9x2QFDrxr7ceksYRGf6L9cMsowwIPPuWb2fTk3JYO1pQVoy6gXjIQuPTGkEjap4TYeu7zH7jlj4l22aWv056beo6noSNIzXr74+/Ho//7kOW+OadAozkIeZO4gyXk0ixwia0XELGSMwrfI43cxFRIYOCA5r5a7CUYYIvgGHGOhyYxrVdvSqulLIhkljij4UIELb9aw3F18PPjRySsyk4xzANFwZejH/FxOq4HztIiInFsk14D5D0WQZmW6WATC5eys6m1bSgC5ytXf5rDbYuQySn/5OfEwxj/r3EWWqLqDVzDDXZ6ik6FtwyZhWg/ej8jq4yRWm+D7SObIeG5lSLFcWIJR3A8QrzcA4ONJC/YEiuAwcuYiRVeVF1pUnuYw9+JWcrLNHDRq4IYl6oZAWwNCaaoMUqf1v0VtMxpOObQQwWDQLtyYCEOVuDFhvHBNEUhOisa9QsTAs4mbheclNT0SxKaTa+Ul0aCyAOyvh4RGaPDTiTxKB2S9R7+EjNCyiw=="
 }

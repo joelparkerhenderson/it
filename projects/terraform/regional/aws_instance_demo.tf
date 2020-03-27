@@ -15,7 +15,7 @@ resource "aws_instance" "demo" {
   ami = data.aws_ami.ubuntu_with_current_version.id
   instance_type = local.aws_instance__instance_type__free_tier
   associate_public_ip_address = true
-  key_name = aws_key_pair.administrator.key_name
+  key_name = "administrator@joelparkerhenderson.com=98393eb0bbd83baa8eae3404da29978e"
 
   availability_zone = "us-east-1a"
 
