@@ -93,7 +93,7 @@
 # If you choose to generate your key pair locally, not using the AWS console,
 # then we suggest you can use  the `openssh` command to create the public key. 
 # Then you need to generate the correct format of the public key.
-###
+##
 
 resource "aws_key_pair" "administrator" {
   key_name   = "administrator@joelparkerhenderson.com=98393eb0bbd83baa8eae3404da29978e"
