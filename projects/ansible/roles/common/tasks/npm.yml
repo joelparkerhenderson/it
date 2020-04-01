@@ -1,0 +1,49 @@
+- include: update-apt-via-module.yml
+- include: update-yum-via-module.yml
+- name: npm install all our packages
+  become: yes
+  become_user: root
+  npm:
+    name: "{{ item }}"
+    global: true
+  loop:
+    # angular: HTML enhanced for web apps.
+    - angular
+    # async: Asynchronous utilities for node and the browser.
+    - async
+    # bower: package manager for the web.
+    - bower
+    # browserify: browser-side require() the node.js way.
+    - browserify
+    # commander: command-line interfaces made easy.
+    - commander
+    # Grunt: The JavaScript Task Runner.
+    - grunt
+    # gulp-uglify: Minify files with UglifyJS.
+    - gulp-uglify
+    # express: Framework for creating and publishing applications and APIs.
+    - express
+    # karma: Spectacular Test Runner for JavaScript.
+    - karma
+    # Less: The dynamic stylesheet language.
+    - less
+    # marked: A markdown parser and compiler built for speed.
+    - marked
+    # mocha:  javascript test framework for node.js & the browser.
+    - mocha
+    # morgan: HTTP request logger middleware for node.js.
+    - morgan
+    # mysql: A pure node.js JavaScript Client implementing the MySQL protocol.
+    - mysql
+    # pm2: Process Manager with a built-in Load Balancer. 
+    - pm2
+    # react: JavaScript library for building user interfaces.
+    - react
+    # request: Simplified HTTP request client.
+    - request
+    # svelte: web application framework.
+    - svelte
+    # underscore: JavaScript's utility belt.
+    - underscore
+    # webpack: A bundler for javascript and friends.
+    - webpack
