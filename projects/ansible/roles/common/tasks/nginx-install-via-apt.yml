@@ -1,0 +1,33 @@
+# NGINX
+#
+# Most Linux distributions and BSD variants have NGINX in the usual package
+# repositories and they can be installed via whatever method is normally used to
+# install software (apt-get on Debian, emerge on Gentoo, ports on FreeBSD, etc).
+#
+# Be aware that these packages are often somewhat out-of-date. If you want the
+# latest features and bugfixes, it’s recommended to use packages directly from
+# nginx.org or build from source.
+
+- include: update-apt-via-module.yml
+- include: apt-via-https.yml
+- name: NGINGX -> Add GPG key
+  become: yes
+  become_user: root
+  apt_key:
+    url: https://nginx.org/keys/nginx_signing.key
+- name: NGINX -> Add apt repository
+  become: yes
+  become_user: root
+  apt_repository:
+    repo: "deb https://nginx.org/packages/ubuntu/ {{ ansible_distribution_release }} nginx"
+- name: NGINX -> Add apt repository src
+  become: yes
+  become_user: root
+  apt_repository:
+    repo: "deb-src https://nginx.org/packages/ubuntu/ {{ ansible_distribution_release }} nginx"
+- name: NGINX -> Install packages
+  become: yes
+  become_user: root
+  apt:
+    pkg: nginx
+    state: latest
