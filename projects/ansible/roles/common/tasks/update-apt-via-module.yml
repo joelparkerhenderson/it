@@ -1,0 +1,10 @@
+- name: Update apt via module
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+  become: yes
+  become_user: root
+  apt:
+    update_cache: yes
+    upgrade: full
+    autoclean: yes
+    autoremove: yes
+    purge: yes
