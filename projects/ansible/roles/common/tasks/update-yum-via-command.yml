@@ -1,0 +1,9 @@
+- name: Update yum via command
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+  become: yes
+  become_user: root
+  command: "yum --quiet --assumeyes {{ item }}"
+  loop:
+    - "clean"
+    - "--obsolete update"
+    - "clean"
