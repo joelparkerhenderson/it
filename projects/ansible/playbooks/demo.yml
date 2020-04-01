@@ -1,4 +1,4 @@
-- hosts: www.nonprofitnetworks.org
+- hosts: www.joelparkerhenderson.com
   tasks:
   - include: ../roles/common/tasks/apt.yml
   - include: ../roles/common/tasks/npm.yml
