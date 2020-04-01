@@ -1,0 +1,13 @@
+- name: Enable apt to use a package repository via HTTPS
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+  become: yes
+  become_user: root
+  apt:
+    pkg: "{{ item }}"
+    state: latest
+  loop:
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - gnupg2
+    - software-properties-common
