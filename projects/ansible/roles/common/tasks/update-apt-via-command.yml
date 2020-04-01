@@ -1,0 +1,10 @@
+- name: Update apt via command
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+  become: yes
+  become_user: root
+  command: "apt-get --quiet --yes {{ item }}"
+  loop:
+    - "update --fix-missing"
+    - "upgrade --fix-broken --fix-missing"
+    - "dist-upgrade --fix-broken --fix-missing"
+    - "full-upgrade --fix-broken --fix-missing"
