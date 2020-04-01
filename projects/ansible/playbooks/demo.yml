@@ -1,0 +1,8 @@
+- hosts: www.nonprofitnetworks.org
+  tasks:
+  - include: ../roles/common/tasks/apt.yml
+  - include: ../roles/common/tasks/npm.yml
+  - include: ../roles/common/tasks/pip.yml
+  - include: ../roles/common/tasks/gem.yml
+  - include: ../roles/common/tasks/docker-install-via-apt.yml
+  - include: ../roles/common/tasks/nginx-install-via-apt.yml
