@@ -1,0 +1,191 @@
+- include: update-apt-via-module.yml
+- include: update-yum-via-module.yml
+- name: pip -> prerequisites -> apt
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+  become: yes
+  become_user: root
+  apt:
+    pkg: "{{ item }}"
+    state: latest
+  loop:
+    - python3
+    - python3-dev
+    - python3-pip
+- name: gem -> prerequisites -> yum
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+  become: yes
+  become_user: root
+  yum:
+    name: "{{ item }}"
+    state: latest
+    loop:
+      # TODO
+- name: pip -> install all our packages
+  become: yes
+  become_user: root
+  pip:
+    executable: pip3
+    name: "{{ item }}"
+  loop:
+    # altgraph: Graph (network) package.
+    - altgraph
+    # awscli: Amazon Web Services (AWS) command line interface (CIL).
+    - awscli
+    # aws-shell: Amazon Web Services (AWS) shell for interactive commands.
+    - aws-shell
+    # awsebcli: Amazon Web Services (AWS) Elastic Beanstalk (EB) command line interface (CLI).
+    - awsebcli
+    # bdist-mpkg: Create virtualenv built distributions.
+    - bdist-mpkg
+    # beautifulsoup: Website screen-scraping and messy parsing.
+    - beautifulsoup4
+    # boto: ?
+    - boto
+    # boto3: ?
+    - boto3
+    # celery: ?
+    - celery
+    # cffi: C-code Foreign Function Interface.
+    - cffi
+    # click: Create command line interfaces in a composable way.
+    - click
+    # construct: Declarative parser (and builder) for binary data.
+    - construct
+    # cryptography: Cryptography recipes and primitives.
+    - cryptography
+    # cycler: Composable style cycles.
+    - cycler
+    # dataset: Easy-to-use data handling for SQL data stores.
+    - dataset
+    # dicttoxml: ?
+    - dicttoxml
+    # dill: A better "pickle" to serialize objects to disk.
+    - dill
+    # enum34: Python 3.4 Enum backported.
+    - enum34
+    # flask: ?
+    - flask
+    # flask-login: ?
+    - flask-login
+    # flask-sqlalchemy: ?
+    - flask-sqlalchemy
+    # folium: Visualize geographic data.
+    - folium
+    # funcsigs: ?
+    - funcsigs
+    # geopandas: Geographic pandas extensions.
+    - geopandas
+    # git-filter-repo: Git tool to filter repo files, better than git filter-branch.
+    - git-filter-repo
+    # hg-git: Mercurial-to-git bridge for version control.
+    - hg-git
+    # idna: ?
+    - idna
+    # ipaddress: IPv4/IPv6 manipulation library.
+    - ipaddress
+    # joblib: Job library for caching, parallelizing, persistence.
+    - joblib
+    # lxml: XML parsing (prefer this when you need speed).
+    - lxml
+    # macholib: Mach-O header analysis and editing.
+    - macholib
+    # marshmallow: Simplified object serialization.
+    - marshmallow
+    # matplotlib: Math plotting library.
+    - matplotlib
+    # mercurial: Mercurial version control.
+    - mercurial
+    # mock: ?
+    - mock
+    # modulegraph: ?
+    - modulegraph
+    # ndg-httpsclient: ?
+    - ndg-httpsclient
+    # nose: ?
+    - nose
+    # numpy: NumPy scientific computing with data structures.
+    - numpy
+    # pandas: Data analysis, time series, and statistics.
+    - pandas
+    # passlib: ?
+    - passlib
+    # pbr: ?
+    - pbr
+    # pip: Python package manager.
+    - pip
+    # pelican: Pelican static site generator.
+    - pelican
+    # pomp: Web scraping (prefer vs. scrapy).
+    - pomp
+    # pillow: Friendly fork of PIL, the Python Imaging Library (https://python-pillow.org/).
+    - pillow
+    # progressbar2: Progress bar (prefer tqdm).
+    - progressbar2
+    # psutil: ?
+    - psutil
+    # pudb: Python debugger (prefer vs. pdb).
+    - pudb
+    # pyasn1: ?
+    - pyasn1
+    # pycparser: ?
+    - pycparser
+    # pygithub: Python GitHub API.
+    - pygithub
+    # pyjwt: ?
+    - pyjwt
+    # pymysql: Python bindings for MySQL.
+    - pymysql
+    # pyopenssl: ?
+    - pyopenssl
+    # pyOpenSSL: ?
+    - pyOpenSSL
+    # py2app: ?
+    - py2app
+    # pyparsing: ?
+    - pyparsing
+    # pytest: ?
+    - pytest
+    # python-dateutil: ?
+    - python-dateutil
+    # python-magic: ?
+    - python-magic
+    # pytz: ?
+    - pytz
+    # redis: Redis database.
+    - redis
+    # requests: Requests is HTTP for Humans (http://www.python-requests.org/).
+    - requests
+    # schema: Simple data validation library (prefer vs. voluptuous).
+    - schema
+    # schematics: Data structures and transformations.
+    - schematics
+    # scipi: SciPy library of algorithms and mathematical tools.
+    - scipy
+    # scrapy: Scrape and extract data from websites (https://scrapy.org/) (prefer pomp).
+    - scrapy
+    # setuptools: ?
+    - setuptools
+    # six: ?
+    - six
+    # sphinx: ?
+    - sphinx
+    # sphinx-rtd-theme: ?
+    - sphinx-rtd-theme
+    # sqlalchemy: SQL database abstraction library.
+    - sqlalchemy
+    # tinydb: Pure Python NoSQL database.
+    - tinydb
+    # Twisted: event-driven networking engine (https://twistedmatrix.com/).
+    - Twisted
+    # tqdm: Display progress bars for loops in code (prefer vs. progressbar2).
+    - tqdm
+    # virtualenv: Virtual environments for independent installations.
+    - virtualenv
+    # visidata: Rapidly explore columnar data in the terminal.
+    - visidata
+    # voluptuous: Data validation library (prefer schema).
+    - voluptuous
+    # xattr: ?
+    - xattr
+    # zope.interface: ?
+    - zope.interface
