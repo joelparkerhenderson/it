@@ -5,7 +5,7 @@
 ##
 
  resource "aws_iam_user" "administrator" {
-  name = "Administrator"
+  name = "administrator"
   tags = {
     name = "Administrator"
     email = "administrator@joelparkerhenderson.comm"
@@ -27,7 +27,7 @@ output "aws_iam_user__administrator__encrypted_password" {
   value = aws_iam_user_login_profile.administrator.encrypted_password
 }
 
-resource "aws_iam_user_policy_attachment" "administrator__change_password" {
+resource "aws_iam_user_policy_attachment" "administrator__administrator_access" {
   user = aws_iam_user.administrator.name
-  policy_arn = "arn:aws:iam::aws:policy/IAMUserChangePassword"
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
