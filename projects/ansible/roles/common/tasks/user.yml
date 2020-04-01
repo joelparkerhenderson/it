@@ -1,0 +1,40 @@
+- name: "user:{{ user.username }}"
+  become: yes
+  become_user: root
+  block:  
+    - name: "user:{{ user.username }} -> group"
+      group: 
+        name: "{{ user.username }}"
+        gid: "{{ user.uid }}"
+        state: "{{ user.state }}"
+    - name: "user:{{ user.username }} -> user"
+      user:  
+        name: "{{ user.username }}"
+        state: "{{ user.state }}"
+        force: yes
+        remove: yes
+        uid: "{{ user.uid }}"
+        comment: "zid={{ user.zid }} uid={{ user.uid }} username={{ user.username }}"
+        password: "{{ user.password }}"
+    - name: "user:{{ user.username }} -> subdirectories .cache .config .ssh .tmp"
+      when: user.state == "present"
+      file:  
+        state: directory
+        path: "~{{ user.username }}/{{ dir }}"
+        owner: "{{ user.username }}"
+        group: "{{ user.username }}"
+        mode: "0700"
+      loop: 
+        - ".cache"
+        - ".config"
+        - ".ssh"
+        - "bin"
+        - "doc"
+        - "tmp"
+      loop_control:
+        loop_var: dir
+    - name: "user:{{ user.username }} uid:{{ user.uid }} -> ~/.ssh/authorized_key"
+      when: user.state == "present" and user.authorized_key is defined and user.authorized_key != ""
+      authorized_key:  
+        user: "{{ user.username }}"
+        key: "{{ user.authorized_key }}"
