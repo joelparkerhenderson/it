@@ -1,0 +1,29 @@
+- include: update-apt-via-module.yml
+- include: apt-via-https.yml
+- name: Docker -> Add GPG key
+  become: yes
+  become_user: root
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+- name: Docker -> Add apt repository
+  become: yes
+  become_user: root
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+- include: update-apt-via-module.yml
+- name: Docker -> Install Docker packages for Docker community edition
+  become: yes
+  become_user: root
+  apt:
+    pkg: "{{ item }}"
+    state: latest
+  loop:
+    - docker-ce 
+    - docker-ce-cli
+    - containerd.io
+- name: Docker -> Install Docker for Python
+  become: yes
+  become_user: root
+  pip:
+    executable: pip3
+    name: docker
