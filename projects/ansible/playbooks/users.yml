@@ -1,0 +1,44 @@
+---
+- hosts: www.joelparkerhenderson.com
+  tasks:
+    - include: ../roles/common/tasks/user.yml
+      loop: "{{ users }}"
+      loop_control:
+        loop_var: user
+  vars:  
+    ##
+    # Users
+    #
+    # Our public-generic automation users have randomly-generated id numbers in the 2xxx range.
+    #
+    # Our project-specific automation users have randomly-generated id numbers in the 3xxx range.
+    #
+    # Our customer-specific person users have randomly-generated id numbers in the 1xxxx range.
+    #
+    # To generate a ZID, which is a secure random 32-bit identifier, one way is:
+    #
+    #     hexdump -n 16 -v -e '/1 "%02x"' -e "/16 \"\n\"" /dev/urandom
+    #
+    # To generate secure random passwords, one way is:
+    #
+    #     password=$(random-password)
+    #     echo "password:$password"
+    #     salt=$(random-password 16)
+    #     ansible all -i localhost, -m debug -a "msg={{ '$password' | password_hash('sha512', '$salt') }}"
+    ##
+    users:
+
+      ## Generic automation users -- in the 2xxx range -- order by username alphabetic
+      - { state: "present", zid: "57ddd06b5a7d786aa24e7f7d69ef7134", uid: "2808", username: "deployer", password: "*" }
+      - { state: "present", zid: "a44910529d13bbb40aa951b047b998ce", uid: "2959", username: "synchronizer", password: "*" }
+      - { state: "present", zid: "9123432324b39f6e49541866c4fdccf4", uid: "2007", username: "webmaster", password: "*" }
+
+      ## Project-specific automation users -- in the 3xxx range -- order by username alphabetic
+      - { state: "present", zid: "a8be1f4432310abb8207342457055559", uid: "3577", username: "gitalias", password: "*" }
+      - { state: "present", zid: "011af22316a1d6b160d214b24231d08f", uid: "3723", username: "numcommand", password: "*" }
+      - { state: "present", zid: "503c0aab978f803869c85e0c6a349f4f", uid: "3941", username: "updatecommand", password: "*" }
+      
+      ## Person users -- in the 1xxxx range -- order by username alphabetic
+      - { state: "present", zid: "42d0c4422defc26cfa8d658f568deb4d", uid: "10520", username: "joel", password: "*" }
+
+      
