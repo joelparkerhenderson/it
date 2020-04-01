@@ -1,0 +1,11 @@
+- name: Update yum
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+  become: yes
+  become_user: root
+  yum:
+    name: '*'
+    state: latest
+    update_cache: yes
+    upgrade: full
+    autoremove: yes
+    purge: yes
