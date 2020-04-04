@@ -1,0 +1,17 @@
+- include: update_apt_via_module.yml
+- include: apt_via_https.yml
+- name: Elixir -> Add apt repository
+  become: yes
+  become_user: root
+  apt:
+    deb: https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb
+- include: update_apt_via_module.yml
+- name: Elixir -> Install packages
+  become: yes
+  become_user: root
+  apt:
+    pkg: "{{ item }}"
+    state: latest
+  loop:
+    - esl-erlang
+    - elixir

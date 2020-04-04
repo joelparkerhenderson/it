@@ -5,4 +5,5 @@
   - include: ../roles/common/tasks/pip.yml
   - include: ../roles/common/tasks/gem.yml
   - include: ../roles/common/tasks/docker_install_via_apt.yml
+  - include: ../roles/common/tasks/elixir_install_via_apt.yml
   - include: ../roles/common/tasks/nginx_install_via_apt.yml
