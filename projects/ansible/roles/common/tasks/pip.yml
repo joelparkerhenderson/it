@@ -83,6 +83,8 @@
     - idna
     # ipaddress: IPv4/IPv6 manipulation library.
     - ipaddress
+    # jc: JSON converter for popular Unix commands.
+    - jc
     # joblib: Job library for caching, parallelizing, persistence.
     - joblib
     # lxml: XML parsing (prefer this when you need speed).
