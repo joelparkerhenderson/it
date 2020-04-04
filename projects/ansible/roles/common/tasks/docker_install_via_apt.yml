@@ -1,4 +1,4 @@
-- include: update-apt-via-module.yml
+- include: update_apt_via_module.yml
 - include: apt-via-https.yml
 - name: Docker -> Add GPG key
   become: yes
@@ -10,7 +10,7 @@
   become_user: root
   apt_repository:
     repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-- include: update-apt-via-module.yml
+- include: update_apt_via_module.yml
 - name: Docker -> Install Docker packages for Docker community edition
   become: yes
   become_user: root

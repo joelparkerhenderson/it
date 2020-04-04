@@ -1,5 +1,5 @@
-- include: update-apt-via-module.yml
-- include: update-yum-via-module.yml
+- include: update_apt_via_module.yml
+- include: update_yum_via_module.yml
 - name: pip -> prerequisites -> apt
   when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
   become: yes

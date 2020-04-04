@@ -8,7 +8,7 @@
 # latest features and bugfixes, it’s recommended to use packages directly from
 # nginx.org or build from source.
 
-- include: update-apt-via-module.yml
+- include: update_apt_via_module.yml
 - include: apt-via-https.yml
 - name: NGINGX -> Add GPG key
   become: yes
