@@ -189,5 +189,7 @@
     - voluptuous
     # xattr: ?
     - xattr
+    # xlrd: Excel reader to export spreadsheet data
+    - xlrd
     # zope.interface: ?
     - zope.interface
