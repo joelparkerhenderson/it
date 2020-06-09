@@ -1,5 +1,5 @@
 - name: Update apt via command
-  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+  when: ansible_os_family == 'Debian'
   become: yes
   become_user: root
   command: "apt-get --quiet --yes {{ item }}"

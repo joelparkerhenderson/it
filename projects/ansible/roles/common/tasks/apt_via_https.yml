@@ -1,5 +1,5 @@
 - name: Enable apt to use a package repository via HTTPS
-  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+  when: ansible_os_family == 'Debian'
   become: yes
   become_user: root
   apt:

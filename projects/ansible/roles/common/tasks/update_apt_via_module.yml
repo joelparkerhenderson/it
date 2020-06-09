@@ -1,5 +1,5 @@
 - name: Update apt via module
-  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+  when: ansible_os_family == 'Debian'
   become: yes
   become_user: root
   apt:

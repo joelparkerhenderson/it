@@ -1,5 +1,5 @@
 - name: Update yum via command
-  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+  when: ansible_os_family == 'RedHat'
   become: yes
   become_user: root
   command: "yum --quiet --assumeyes {{ item }}"
