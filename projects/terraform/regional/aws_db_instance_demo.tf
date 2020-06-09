@@ -1,5 +1,4 @@
 ##
-#
 # Database
 #
 # To create the database, we variables for the username and password.
@@ -10,11 +9,12 @@
 #     export TF_VAR_aws_db_instance_demo_password="secret"
 ##
 
-variable "aws_db_instance_demo_username" {
+variable "aws_db_instance__demo__username" {
   description = "aws_db_instance demo username"
   default = "postgres"
 }
-variable "aws_db_instance_demo_password" {
+
+variable "aws_db_instance__demo__password" {
   description = "aws_db_instance demo password"
   default = "secret"
 }
@@ -56,8 +56,8 @@ resource "aws_db_instance" "demo" {
   # If you are are building a production system or secure system,
   # then we recommend you read more about Terrraform security.
   #
-  username             = var.aws_db_instance_demo_username
-  password             = var.aws_db_instance_demo_password
+  username             = var.aws_db_instance__demo__username
+  password             = var.aws_db_instance__demo__password
 
   # We like to use the database with public tools such as DB admin apps.
   publicly_accessible = "true"
