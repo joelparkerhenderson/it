@@ -1,0 +1,8 @@
+- name: Clone repo
+  become: yes
+  become_user: root
+  git: 
+    repo: "https://github.com/joelparkerhenderson/it.git"
+    dest: "/opt/joelparkerhenderson/it"
+    force: yes
+    update: yes

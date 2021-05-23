@@ -1,0 +1,8 @@
+nginx:
+    site:
+        name: joelparkerhenderson.com
+        owner: joelparkerhenderson
+        group: joelparkerhenderson
+        server_name: joelparkerhenderson.com www.joelparkerhenderson.com
+        title: Joel Parker Henderson
+        headline: Joel Parker Henderson

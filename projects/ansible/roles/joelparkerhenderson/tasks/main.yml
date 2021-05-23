@@ -1,0 +1,4 @@
+- include_vars: ../vars/main.yml
+#- include: clone_repo.yml
+- import_tasks: "{{ playbook_dir }}/../roles/common/tasks/nginx_site.yml"
+- import_tasks: "{{ playbook_dir }}/../roles/common/tasks/nginx_site_index_page.yml"
