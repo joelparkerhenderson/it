@@ -1,0 +1,14 @@
+#!/bin/sh
+set -euf
+claude="claude --model sonnet --dangerously-skip-permissions"
+tmux-start "floss" \
+"~" "cd ~/" \
+"er7" "cd ~/git/er7-rust/er7-rust/ && $claude" \
+"hl7" "cd ~/git/hl7-rust/hl7-rust/ && $claude" \
+"openehr" "cd ~/git/openehr-rust/openehr-rust/ && $claude" \
+"schematron" "cd ~/git/schematron-rust/schematron-rust/ && $claude" \
+"snomed" "cd ~/git/snomed-rust/snomed-rust/ && $claude" \
+"forms" "cd ~/git/formexamples/form-examples/ && $claude" \
+"lily" "cd ~/git/lilydesignsystem/lily-design-system/ && $claude" \
+"main" "cd ~/git/sixarm/main-x-service/ && $claude" \
+"vix" "cd ~/git/vixide/vix/ && $claude"
