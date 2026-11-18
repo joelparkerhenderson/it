@@ -1,0 +1,79 @@
+#!/bin/sh
+. "$(dirname "$(readlink -f "$0")")/unix-shell-script-kit"
+set -euf
+BASE=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P) && cd "$BASE"
+
+dir="$1"
+
+check_benchmarks() {
+    cd "$1"
+    command_exists_or_die cargo-criterion
+    command_exists_or_die criterion-table
+    file_exists bin/benchmarks || rsync -av "$BASE/etc/skel/bin/benchmarks" bin/
+    dst="docs/benchmarks" && mkdir -p "$dst" && cd "$dst"
+    if [ ! -f index.md ]; then
+        bin/benchmarks
+    fi
+}
+
+check_ci() {
+    cd "$1"
+    file_exists bin/ci || rsync -av "$BASE/etc/skel/bin/ci" bin/
+}
+
+check_coverage() {
+    cd "$1"
+    command_exists_or_die cargo-tarpaulin
+    file_exists bin/coverage || rsync -av "$BASE/etc/skel/bin/coverage" bin/
+    file_exists tarpaulin.toml || err "Need tarpaulin.toml configuration to generate code coverage with tarpaulin"
+    grep_exists_or_err "output-dir = \"docs/audit/coverage\"" tarpaulin.toml
+    dst="docs/coverage" && mkdir -p "$dst" && cd "$dst"
+    if [ ! -f tarpaulin-report.html ]; then
+        bin/coverage
+    fi
+}
+
+check_makefile() {
+    cd "$1"
+
+    file_exists || rsync -av "$BASE/etc/skel/Makefile" .
+
+    grep_exists_or_err "# help: Display this help message." Makefile
+    grep_exists_or_err ".PHONY: help" Makefile
+    grep_exists_or_err "help:" Makefile
+
+    grep_exists_or_err "# make benchmarks: run bin/benchmarks to generate code benchmarks with criterion." Makefile
+    grep_exists_or_err ".PHONY: benchmarks" Makefile
+    grep_exists_or_err "benchmarks:" Makefile
+
+    grep_exists_or_err "# make build: run bin/build to build everything." Makefile
+    grep_exists_or_err ".PHONY: build" Makefile
+    grep_exists_or_err "build:" Makefile
+
+    grep_exists_or_err "# make ci: run bin/ci to do continuous integration." Makefile
+    grep_exists_or_err ".PHONY ci"  Makefile
+    grep_exists_or_err "ci:"  Makefile
+  
+    grep_exists_or_err "# make clean: run bin/clean to clean everything." Makefile
+    grep_exists_or_err ".PHONY: clean" Makefile
+    grep_exists_or_err "clean:" Makefile
+
+    grep_exists_or_err "# make coverage: run bin/coverage to generate code coverage analysis with tarpaulin." Makefile
+    grep_exists_or_err ".PHONY .coverage:" Makefile
+    grep_exists_or_err "coverage:" Makefile
+
+    grep_exists_or_err "# make test: run bin/test to test everything" Makefile
+    grep_exists_or_err ".PHONY: test" Makefile
+    grep_exists_or_err "test:" Makefile
+}
+
+check_rust_toolchain() {
+    cd "$1"
+    file_exists rust-toolchain.html || rsync -av --ignore-existing "$BASE/etc/skel/rust-toolchain.html" rust-toolchain.html
+}
+
+## main
+check_benchmarks "$dir"
+check_coverage "$dir"
+check_makefile "$dir"
+check_rust_toolchain "$dir"

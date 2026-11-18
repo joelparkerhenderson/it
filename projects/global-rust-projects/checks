@@ -1,0 +1,39 @@
+#!/bin/sh
+# Check everything
+set -euf
+BASE=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P) && cd "$BASE"
+
+for dir in \
+    ~/git/publicprojects-io/axa \
+    ~/git/publicprojects-io/digital-health-rust-crate \
+    ~/git/publicprojects-io/health-economics-rust-crate \
+    ~/git/publicprojects-io/public-value-rust-crate \
+    ~/git/publicprojects-io/software-engineering-rust-crate \
+    ~/git/international-patient-summary/international-patient-summary \
+    ~/git/architecture-decision-record/architecture-decision-record \
+    ~/git/decision-records/decision-records \
+    ~/git/roles-skills/roles-skills \
+    ~/git/electronic-patient-record/electronic-patient-record \
+    ~/git/patient-administration-system/patient-administration-system \
+    ~/git/contact-relationship-management/contact-relationship-management \
+    ~/git/project-portfolio-management/project-portfolio-management \
+    ~/git/workforce-planning-management/workforce-planning-management \
+    ~/git/er7-rust/er7-rust \
+    ~/git/fhir-rust/fhir-rust \
+    ~/git/hl7-rust/hl7-rust \
+    ~/git/mssql-rust/mssql-rust \
+    ~/git/openehr-rust/openehr-rust \
+    ~/git/snomed-rust/snomed-rust \
+    ~/git/schematron-rust/schematron-rust \
+    ~/git/mssql-rust/mssql-rust \
+    ~/git/who-fic-rust/who-fic-rust \
+    ~/git/sixarm/main-x-service \
+    ~/git/vixide/vix \
+    ~/git/formexamples/form-examples
+do
+    if [ -f "$dir/Cargo.toml" ]; then
+        "$BASE/check" "$dir"
+    else
+        echo "Need Cargo.toml in $dir"
+    fi
+done

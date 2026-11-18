@@ -1,0 +1,4063 @@
+#!/bin/sh
+# shellcheck disable=SC2034
+
+# Unix shell script kit.
+#
+# Unix shell script kit is a collection of utility functions and constants.
+#
+# The kit works with POSIX shells, including bash, zsh, dash, ksh, sh, etc.
+#
+# All suggestions are welcome and appreciated.
+#
+# [View the source code file with all documentation comments](https://raw.githubusercontent.com/SixArm/unix-shell-script-kit/main/unix-shell-script-kit)
+#
+# Documentation:
+#
+# - [Functions](https://github.com/SixArm/unix-shell-script-kit/tree/main/doc/function/)
+# - [Color codes](https://github.com/SixArm/unix-shell-script-kit/tree/main/doc/color-codes/)
+# - [Exit codes](https://github.com/SixArm/unix-shell-script-kit/tree/main/doc/exit-codes/)
+# - [Assert testing](https://github.com/SixArm/unix-shell-script-kit/tree/main/doc/assert-testing/)
+#
+# ## Download
+#
+# Download the kit as one file that has everything:
+#
+# ```sh
+# curl -O "https://raw.githubusercontent.com/SixArm/unix-shell-script-kit/main/unix-shell-script-kit"
+# ```
+#
+# ## Source
+#
+# To use the kit in your own script, you source the kit like this:
+#
+# ```sh
+# . /your/path/here/unix-shell-script-kit
+# ```
+#
+# To use the kit in your own script, in the same directory, you source the kit like this:
+#
+# ```sh
+# . "$(dirname "$(readlink -f "$0")")/unix-shell-script-kit"
+# ```
+#
+# ## AI
+#
+# This work is 100% by humans. If you want to use this kit with your AI, then you can download AI-friendly files.
+#
+# - If your AI is small, then download [llms-small.txt](https://raw.githubusercontent.com/SixArm/unix-shell-script-kit/main/llms-small.txt)
+#
+# - If your AI is large, then download [llms-large.txt](https://raw.githubusercontent.com/SixArm/unix-shell-script-kit/main/llms-large.txt)
+#
+# ## Tracking
+#
+#   * Package: unix-shell-script-kit
+#   * Version: 13.3.0
+#   * Created: 2017-08-22T00:00:00Z
+#   * Updated: 2026-04-22T06:41:37Z
+#   * License: GPL-2.0 or GPL-3.0 or contact us for more
+#   * Website: https://github.com/sixarm/unix-shell-script-kit
+#   * Contact: Joel Parker Henderson (joel@sixarm.com)
+
+##
+# Log levels
+##
+
+# These log levels align with syslog priority levels and C include file.
+# For more about how to use these here, see the function `log` below.
+#
+# We define one extra log level, which is LOG_TRACE=8, because so many
+# tools have trace capabilties and it's pragmatic for writing scripts.
+
+# LOG_EMERG=0 (Emergency: System is unusable)
+LOG_EMERG=0
+
+# LOG_ALERT=1 (Alert: Action must be taken immediately)
+LOG_ALERT=1
+
+# LOG_CRIT=2 (Critical conditions)
+LOG_CRIT=2
+
+# LOG_ERR=3 (Error conditions)
+LOG_ERR=3
+
+# LOG_WARN=4 (Warning conditions)
+LOG_WARN=4
+
+# LOG_NOTICE=5 (Notice: normal but significant conditions)
+LOG_NOTICE=5
+
+# LOG_INFO=6 (Informational)
+LOG_INFO=6
+
+# LOG_DEBUG=7 (Debug-level messages)
+LOG_DEBUG=7
+
+# LOG_TRACE=8 (Trace-level messages)
+LOG_TRACE=8
+
+##
+# Exit codes
+##
+
+# Our POSIX shell programs call "exit" with an exit code value.
+#
+# Conventions:
+#
+# * 0 = success, and non-zero indicates any other issue.
+#
+# * 1 = failure
+#
+# * 2 = failure due to a usage problem
+#
+# * 3-63 are for a program-specific exit codes.
+#
+# * 64-78 are based on BSD sysexits <https://man.openbsd.org/sysexits.3>
+#
+# Conventions we propose for use worldwide:
+#
+# * 80+ for user interation issues
+#
+# * 90+ for access control issues
+#
+# * 100+: process runtime issues
+#
+# * 110+: expected ability issues
+#
+# Many shells use exit codes 126-128 to signal specific error status:
+#
+# * 126 is for the shell and indicates command found but is not executable.
+#
+# * 127 is for the shell and indicate command not found.
+#
+# * 128 is for invalid argument to exit.
+#
+# Many shells use exit codes above 128 in their $? representation of the exit
+# status to encode the signal number of a process being killed.
+#
+# * 128+n means fatal error signal "n"
+#
+# * Example: 130 means terminated by ctrl-C (because ctrl-c is signal 2)
+#
+# * Example: 137 means terminated by kill -9 (because 128 + 9 = 137)
+#
+# Finally, the highest exit code:
+#
+# * 255 Exit status out of range (exit takes integer args 0-255)
+#
+# Be aware that on some shells, ut of range exit values can result in unexpected
+# exit codes. An exit value greater than 255 returns an exit code modulo 256.
+#
+# * Example: exit 257 becomes exit 1 (because 257 % 256 = 1)
+#
+# * Caution: exit 256 becomes exit 0, which probably isn't what you want.
+#
+# For some typical needs that we encounter, we can suggest these:
+#
+# * Authentication issues: exit $EXIT_NOUSER
+#
+# * Authorization issues: exit $EXIT_NOPERM
+#
+# * A user chooses cancel: exit $EXIT_QUIT
+#
+# The exit code list below is subject to change over time, as we learn more.
+
+# EXIT_SUCCESS=0 (Success)
+#
+# The program succeeded.
+#
+# E.g. everything worked as expected; any pipe processing will continue.
+#
+# Exit 0 meaning success is a widespread convention as a catch-all code.
+#
+EXIT_SUCCESS=0
+
+# EXIT_FAILURE=1 (Failure)
+#
+# The program failed.
+#
+# E.g. an error, an abort, found no results, lack of data, etc.
+#
+# Exit 1 meaning failure is a widespread convention as a catch-all code.
+#
+EXIT_FAILURE=1
+
+# EXIT_USAGE=2 (Usage)
+#
+# The program usage is incorrect, or malformed, or in conflict, etc.
+#
+# E.g. wrong number of args, a bad flag, a syntax error in an option, etc.
+#
+# Exit 2 meaning usage is a widespread convention as a catch-all CLI code.
+#
+EXIT_USAGE=2
+
+# EXIT_DATAERR=65 (Data Error)
+#
+# The input data was incorrect in some way.
+#
+# This should only be used for user's data and not system files.
+#
+EXIT_DATAERR=65
+
+# EXIT_NOINPUT=66 (No Input)
+#
+# An input file-- not a system file-- did not exist or was not readable.
+#
+# This could include errors like "No message" to a mailer, if it cared about it.
+#
+EXIT_NOINPUT=66
+
+# EXIT_NOUSER=67 (No User)
+#
+# The user specified did not exist.
+#
+# E.g. for email addresses, or remote logins, or authentication issues, etc.
+#
+EXIT_NOUSER=67
+
+# EXIT_NOHOST=68 (No Host)
+#
+# The host specified did not exist.
+#
+# E.g. for email addresses, or network requests, or webs links, etc.
+#
+EXIT_NOHOST=68
+
+# EXIT_UNAVAILABLE=69 (Unavailable)
+#
+# A service is unavailable.
+#
+# E.g. a support program or file does not exist. This can also be a catchall
+# message when something does not work, but you do not know why.
+#
+EXIT_UNAVAILABLE=69
+
+# EXIT_SOFTWARE=70 (Software)
+#
+# An internal software error has been detected.
+#
+# This should be limited to non-operating system related errors as possible.
+#
+EXIT_SOFTWARE=70
+
+# EXIT_OSERR=71 (Operating System Error)
+#
+# An operating system error has been detected.
+#
+# E.g. errors such as "cannot fork", "cannot create pipe", or getuid returns a
+# user that does not exist in the passwd file, etc.
+#
+EXIT_OSERR=71
+
+# EXIT_OSFILE=72 (Operating System File)
+#
+# An operating system file (e.g. /etc/passwd) does not exist, or cannot
+# be opened, or has some sort of error (e.g. syntax error).
+#
+EXIT_OSFILE=72
+
+# EXIT_CANTCREATE=73 (Can't Create)
+#
+# A user-specified output (e.g. a file) cannot be created.
+#
+EXIT_CANTCREATE=73
+
+# EXIT_IOERR=74 (Input/Output Error)
+#
+# An error occurred while doing input/output on some file, or stream, etc.
+#
+EXIT_IOERR=74
+
+# EXIT_TEMPFAIL=75 (Temporary Failure)
+#
+# A temporary failure occurred; this is not a permanent error.
+#
+# E.g. a mailer could not create a connection. The request can be retried later.
+#
+EXIT_TEMPFAIL=75
+
+# EXIT_PROTOCOL=76 (Protocol)
+#
+# The remote system returned something that was "not possible" during
+# a protocol exchange.
+#
+EXIT_PROTOCOL=76
+
+# EXIT_NOPERM=77 (No Permission)
+#
+# You did not have sufficient permission to perform the operation.
+#
+# This is not for file system problems, which use EXIT_NOINPUT or
+# EXIT_CANTCREATE, but for higher level permissions, authorizations, etc.
+#
+EXIT_NOPERM=77
+
+# EXIT_CONFIG=78 (Config)
+#
+# Something was found in an unconfigured or misconfigured state.
+#
+EXIT_CONFIG=78
+
+# EXIT_QUIT=80 (Quit)
+#
+# The user chose to quit, or cancel, or abort, or discontinue, etc.
+#
+EXIT_QUIT=80
+
+# EXIT_KYC=81 (Know Your Customer)
+#
+# The program requires more user interaction, or user information, etc.
+#
+# E.g. email validation, age verification, terms of service agreement, etc.
+#
+EXIT_KYC=81
+
+# EXIT_UPDATE=89 (Update)
+#
+# The program or its dependencies need an update, or upgrade, etc.
+#
+EXIT_UPDATE=89
+
+# EXIT_CONFLICT=90 (Conflict)
+#
+# An item has a conflict e.g. edit collision, or merge error, etc.
+#
+# Akin to HTTP status code 409 Conflict.
+#
+EXIT_CONFLICT=90
+
+# EXIT_UNLAWFUL=91 (Unlawful)
+#
+# Something is prohibited due to law, or warrant, or court order, etc.
+#
+# Akin to HTTP status code 451 Unavailable For Legal Reasons (RFC 7725).
+#
+EXIT_UNLAWFUL=91
+
+# EXIT_PAYMENT_ISSUE=92 (Payment Issue)
+#
+# Something needs a credit card, or invoice, or billing, etc.
+#
+# Akin to a superset of HTTP status code 402 Payment Required.
+#
+EXIT_PAYMENT_ISSUE=92
+
+# EXIT_QUOTA_ISSUE=93 (Quota Issue)
+#
+# A quota is reached, such as exhausting a free trial, out of fuel, etc.
+#
+# Akin to a superset of HTTP status code 429 Too Many Requests.
+#
+EXIT_QUOTA_ISSUE=93
+
+# EXIT_BUSY=100 (Busy)
+#
+# A process is too busy, or overloaded, or throttled, or breakered, etc.
+#
+# Akin to HTTP status code 503 Service Unavailable; always means overloaded.
+#
+EXIT_BUSY=100
+
+# EXIT_TIMEOUT=101 (Timeout)
+#
+# A process is too slow, or estimated to take too long, etc.
+#
+# Akin to HTTP status code 408 Request Timeout.
+#
+EXIT_TIMEOUT=101
+
+# EXIT_LOCKOUT=102 (Lockout)
+#
+# A process is intentionally blocked as a danger, hazard, risk, etc.
+#
+# This is for lockout-tagout (LOTO) safety, or protecting users or data, etc.
+#
+EXIT_LOCKOUT=102
+
+# EXIT_LOOP=103 (Loop)
+#
+# A process has detected an infinite loop, so is aborting.
+#
+# Akin to HTTP status code 508 Loop Detected.
+#
+EXIT_LOOP=103
+
+# EXIT_MOVED_PERMANENTLY=110 (Moved Permanently)
+#
+# An expected ability has been moved permanently.
+#
+# Akin to HTTP status code 301 Moved Permanently.
+#
+EXIT_MOVED_PERMANENTLY=110
+
+# EXIT_MOVED_TEMPORARILY=111 (Moved Temporarily)
+#
+# An expected ability has been moved temporarily.
+#
+# Akin to HTTP status code 302 Moved Temporarily.
+#
+EXIT_MOVED_TEMPORARILY=111
+
+# EXIT_GONE=112 (Gone)
+#
+# An expected ability has been intentionally removed, or deleted, etc.
+#
+# Akin to HTTP status code 410 Gone; the ability should be purged.
+#
+EXIT_GONE=112
+
+# EXIT_FUTURE=119 (Future)
+#
+# An expected ability is not yet implemented, or work in progress, etc.
+#
+# Akin to HTTP status code 501 Not Implemented; implies future availability.
+#
+EXIT_FUTURE=119
+
+# EXIT_GIT_BISECT_SKIP=125 (Git bisect skip)
+#
+# The special exit code 125 should be used when the current source code cannot
+# be tested. If the script exits with this code, the current revision will be
+# skipped (see git bisect skip above).
+#
+# Value 125 was chosen as the highest sensible value to use for this
+# purpose, because 126 and 127 are used by shells to signal specific errors.
+#
+EXIT_GIT_BISECT_SKIP=125
+
+# EXIT_COMMAND_FOUND_BUT_NOT_EXECUTABLE=126 (Command found but not executable)
+#
+# A command is found but is not executable.
+#
+# This is a shell convention.
+#
+EXIT_COMMAND_FOUND_BUT_NOT_EXECUTABLE=126
+
+# EXIT_COMMAND_NOT_FOUND=127 (Command not found)
+#
+# A command is not found.
+#
+# This is a shell convention.
+#
+EXIT_COMMAND_NOT_FOUND=127
+
+# EXIT_CODE_INVALID=128 (Exit code invalid)
+#
+# The exit code is invalid.
+#
+# This is a shell convention.
+#
+# Compare EXIT_CODE_OUT_OF_RANGE=255.
+#
+EXIT_CODE_INVALID=128
+
+# EXIT_CODE_OUT_OF_RANGE=255 (Exit code out of range)
+#
+# The exit code is out of range i.e. not in 0-255.
+#
+# This is a shell convention.
+#
+# Compare EXIT_CODE_INVALID=128
+#
+EXIT_CODE_OUT_OF_RANGE=255
+
+##
+# Color codes
+##
+
+# ANSI escape color codes
+#
+# Example:
+#
+# ```sh
+# printf "%sblack\n" $COLOR_BLACK
+# printf "%sred\n" $COLOR_RED
+# printf "%sgreen\n" $COLOR_GREEN
+# printf "%syellow\n" $COLOR_YELLOW
+# printf "%sblue\n" $COLOR_BLUE
+# printf "%smagenta\n" $COLOR_MAGENTA
+# printf "%scyan\n" $COLOR_CYAN
+# printf "%swhite\n" $COLOR_WHITE
+# ```
+#
+# For POSIX compatibility we use escape codes directly. We do not use "tput".
+# It's true that tput is POSIX — it's specified in POSIX.1-2001 and later.
+#
+# However, some operands are standardized (clear, init, reset, longname)
+# whereas the color operands are not (setaf, setab, sgr0, bold, etc.).
+#
+# So while "tput setaf 1" works on most modern systems (Linux, macOS, BSDs),
+# it relies on non-POSIX terminfo extensions. The raw ANSI escape codes are
+# more universally portable when you need guaranteed behavior across systems.
+#
+# For the widest support, use the basic set of 8 colors below,
+# and respect the user preferences by using the color() function.
+#
+# Many terminals also support "bright" or "bold" colors;
+# these colors have their own set of codes, similar to the
+# basic colors yet with an additional ;1 in their codes.
+# We do not recommend using these colors in your shell scripts,
+# because so many users prefer to set their own terminal colors.
+
+# Reset all color information
+#
+# ```sh
+# COLOR_RESET
+# ```
+#
+COLOR_RESET='[0m'
+
+# Basic foreground colors
+#
+# - `COLOR_BLACK`
+# - `COLOR_RED`
+# - `COLOR_GREEN`
+# - `COLOR_YELLOW`
+# - `COLOR_BLUE`
+# - `COLOR_MAGENTA`
+# - `COLOR_CYAN`
+# - `COLOR_WHITE`
+# ```
+#
+COLOR_BLACK='[30m'
+COLOR_RED='[31m'
+COLOR_GREEN='[32m'
+COLOR_YELLOW='[33m'
+COLOR_BLUE='[34m'
+COLOR_MAGENTA='[35m'
+COLOR_CYAN='[36m'
+COLOR_WHITE='[37m'
+
+# Basic background colors
+#
+# - `COLOR_BG_BLACK`
+# - `COLOR_BG_RED`
+# - `COLOR_BG_GREEN`
+# - `COLOR_BG_YELLOW`
+# - `COLOR_BG_BLUE`
+# - `COLOR_BG_MAGENTA`
+# - `COLOR_BG_CYAN`
+# - `COLOR_BG_WHITE`
+#
+COLOR_BG_BLACK='[40m'
+COLOR_BG_RED='[41m'
+COLOR_BG_GREEN='[42m'
+COLOR_BG_YELLOW='[43m'
+COLOR_BG_BLUE='[44m'
+COLOR_BG_MAGENTA='[$5m'
+COLOR_BG_CYAN='[46m'
+COLOR_BG_WHITE='[47m'
+
+# color
+#
+# Should the program use color?
+#
+# Syntax:
+#
+# ```sh
+# color
+# => true or false
+# ```
+#
+# The color logic heuristic in order of priority:
+#
+# 1. If NO_COLOR is set to non-empty, then no.
+# 2. If CLICOLOR_FORCE is set to non-empty, then yes.
+# 3. If TERM is set to "dumb", then no.
+# 4. If the output is on a terminal, then yes.
+# 5. Otherwise, no.
+#
+# The color logic heuristic is written line-by-line
+# to make it easier for developers to read and change.
+#
+color() {
+        if [ -z "${NO_COLOR:-}" ]; then return 1; fi
+        if [ -n "${CLICOLOR_FORCE:-}" ]; then return 0; fi
+        if [ "${TERM:-}" = "dumb" ]; then return 1; fi
+        if [ -t 1 ]; then return 0; fi
+        return 1
+}
+
+# Set output color and error color
+#
+# Set our preferred color code for output message and error message.
+#
+# These variables are used by the out() function and err() function below.
+#
+# If you wish to set these in your terminal, and your terminal supports
+# dollar strings with \E meaning escape, then you can use the following:
+#
+# ```sh
+# export STDOUT_COLOR_START=$'\E[34m'
+# export STDOUT_COLOR_STOP=$'\E[0m'
+# export STDERR_COLOR_START=$'\E[31m'
+# export STDERR_COLOR_STOP=$'\E[0m'
+# ```
+#
+if color; then
+        : ${STDOUT_COLOR_START='[34m'}
+        : ${STDOUT_COLOR_STOP='[0m'}
+        : ${STDERR_COLOR_START='[31m'}
+        : ${STDERR_COLOR_STOP='[0m'}
+else
+        : ${STDOUT_COLOR_START=''}
+        : ${STDOUT_COLOR_STOP=''}
+        : ${STDERR_COLOR_START=''}
+        : ${STDERR_COLOR_STOP=''}
+fi
+
+##
+# Input/output helpers
+##
+
+# out
+#
+# Print output message to stdout.
+#
+# Syntax:
+#
+# ```sh
+# out <message>
+# => message
+# ```
+#
+# Example:
+#
+# ```sh
+# out "my message"
+# STDOUT=> my message
+# ```
+#
+# We use `printf` instead of `echo` because `printf` is more consistent
+# on more systems, such as for escape sequence handling.
+#
+# Compare:
+#
+#   * Use the `out` function to print to STDOUT.
+#
+#   * Use the `err` function to print to STDERR.
+#
+out() {
+        >&1 printf %s\\n "${STDOUT_COLOR_START:-}${*}${STDOUT_COLOR_STOP:-}"
+}
+
+# err
+#
+# Print error message to stderr.
+#
+# Syntax:
+#
+# ```sh
+# err <message>
+# => message
+# ```
+#
+# Example:
+#
+# ```sh
+# err "my message"
+# STDERR=> my message
+# ````
+#
+# We use `printf` instead of `echo` because `printf` is more consistent
+# on more systems, such as for escape sequence handling.
+#
+# Compare:
+#
+#   * Use the `out` function to print to STDOUT.
+#
+#   * Use the `err` function to print to STDERR.
+#
+err() {
+        >&2 printf %s\\n "${STDERR_COLOR_START:-}${*}${STDERR_COLOR_STOP:-}"
+}
+
+# die
+#
+# Print error message to stderr, then exit with error code.
+#
+# Syntax:
+#
+# ```sh
+# die <exit code> <message>
+# STDERR=> <message>
+# EXIT=> <exit code>
+# ```
+#
+# Example:
+#
+# ```sh
+# die 1 "my message"
+# STDERR=> my message
+# EXIT=> 1
+# ```
+#
+# Example with an exit code number and exit code name:
+#
+# ```sh
+# die $EXIT_UNAVAILABLE EXIT_UNAVAILABLE
+# STDERR=> EXIT_UNAVAILABLE
+# EXIT=> 69
+# ```
+#
+# Example with more information:
+#
+# ```sh
+# false || die $? "Fatal error $? on line $LINENO of $0"
+# STDERR=> Fatal error 1 on line 2 of example.sh"
+# EXIT=> 1
+# ```
+#
+die() {
+       n="$1" ; shift ; err "$*"; exit "$n"
+}
+
+# big
+#
+# Print a big banner to stdout, good for human readability.
+#
+# Syntax:
+#
+# ```sh
+# big <message>
+# =>
+# ###
+# #
+# # <message>
+# #
+# ###
+# ```
+#
+# Example:
+#
+# ```sh
+# big "my message"
+# =>
+# ###
+# #
+# # my message
+# #
+# ###
+# ```
+#
+big() {
+        printf \\n###\\n#\\n#\ %s\\n#\\n###\\n\\n "$*"
+}
+
+# zid
+#
+# Generate a 32-bit secure random lowercase hex identifier.
+#
+# Syntax:
+#
+# ```sh
+# zid
+# => <32-bit secure random lowercase hex identifier>
+# ```
+#
+# Example:
+#
+# ```sh
+# zid
+# => 78577554e967951388b5907854b4c337
+# ```
+#
+zid() {
+        hexdump -n 16 -v -e '16/1 "%02x" "\n"' /dev/random
+}
+
+# ask
+#
+# Prompt the user for a line of input, then return a trimmed string.
+#
+# Syntax:
+#
+# ```sh
+# ask
+# => <prompt>
+# ```
+#
+# Example:
+#
+# ```sh
+# ask
+# => prompt the user for a line of input
+# ```
+#
+ask() {
+        read -r x ; printf %s "$x" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
+}
+
+# utf8
+#
+# Should the program print UTF-8 characters such as accents and emoji?
+#
+# Syntax:
+#
+# ```sh
+# utf8
+# => true or false
+# ```
+#
+#
+# Example:
+#
+# ```sh
+# utf8
+# => true
+# ```
+#
+# This implementation is a heuristic and subject to change as we learn more.
+# This checks the locale charmap. However, it's possible for the charmap to
+# be set to UTF-8, but the terminal is unable to render UTF-8 characters.
+#
+utf8() {
+        if [ "$(locale charmap)" = "UTF-8" ]; then return 0; fi
+        return 1
+}
+
+##
+# Log
+##
+
+# log
+#
+# Print a datestamp, unique random id, hostname, process id, log level, and message.
+#
+# Syntax:
+#
+# ```sh
+# log <log level> <message>
+# => <datestamp> <unique random id> <hostname> <process id> <log level> <message>
+# ```
+#
+# Example:
+#
+# ```sh
+# log $LOG_ALERT "my message"
+# => 2021-05-04T22:57:54.000000000+00:00 7e7151dc24bd511098ebb248771d8ffb abc.example.com 1234 1 my message
+# ```
+#
+# We prefer this log file format for many of our scripts because we prefer
+# logging the additional diagnositc information that we use for our systems:
+# the datetime with nanosecond-friendly format and timezone-friendly format,
+# unique random id a.k.a. zid, hostname, and process number.
+#
+# This prints if and only if log level <= LOG_LEVEL environment variable,
+# or the LOG_LEVEL environment variable is not set.
+#
+# The log level constants that are defined by syslog and this script:
+#
+# - LOG_EMERG=0 (Emergency: System is unusable)
+# - LOG_ALERT=1 (Alert: Action must be taken immediately)
+# - LOG_CRIT=2 (Critical conditions)
+# - LOG_ERR=3 (Error conditions)
+# - LOG_WARNING=4 (Warning conditions)
+# - LOG_NOTICE=5 (Notice: normal but significant conditions)
+# - LOG_INFO=6 (Informational)
+# - LOG_DEBUG=7 (Debug-level messages)
+# - LOG_TRACE=8 (Trace-level messages)
+#
+# This kit also provides these log functions that are more convenient:
+#
+# - log_emerg
+# - log_alert
+# - log_crit
+# - log_err
+# - log_warn
+# - log_notice
+# - log_info
+# - log_debug
+# - log_trace
+#
+log() {
+    [ "$1" -le "${LOG_LEVEL:-8}" ] && printf '%s %s %s %s %s\n' "$( now )" "$( zid )" "$( hostname )" $$ "$*"
+}
+
+# log_emerg
+#
+# Log level emerg: log a datestamp, unique random id, hostname, process id, log level, and message.
+#
+# Syntax:
+#
+# ```sh
+# log_emerg <message>
+# => log $LOG_EMERG <message>
+# ```
+#
+# Example:
+#
+# ```sh
+# log_emerg "my message"
+# => 2021-05-04T22:57:54.000000000+00:00 7e7151dc24bd511098ebb248771d8ffb abc.example.com 1234 0 my message
+# ```
+#
+log_emerg() {
+    log $LOG_EMERG "$@"
+}
+
+# log_alert
+#
+# Log level alert: log a datestamp, unique random id, hostname, process id, log level, and message.
+#
+# Syntax:
+#
+# ```sh
+# log_alert <message>
+# => log $LOG_ALERT <message>
+# ```
+#
+# Example:
+#
+# ```sh
+# log_alert "my message"
+# => 2021-05-04T22:57:54.000000000+00:00 7e7151dc24bd511098ebb248771d8ffb abc.example.com 1234 1 my message
+# ```
+#
+log_alert() {
+    log $LOG_ALERT "$@"
+}
+
+# log_crit
+#
+# Log level crit: log a datestamp, unique random id, hostname, process id, log level, and message.
+#
+# Syntax:
+#
+# ```sh
+# log_crit <message>
+# => log $LOG_CRIT <message>
+# ```
+#
+# Example:
+#
+# ```sh
+# log_crit "my message"
+# => 2021-05-04T22:57:54.000000000+00:00 7e7151dc24bd511098ebb248771d8ffb abc.example.com 1234 2 my message
+# ```
+#
+log_crit() {
+    log $LOG_CRIT "$@"
+}
+
+# log_err
+#
+# Log level err: log a datestamp, unique random id, hostname, process id, log level, and message.
+#
+# Syntax:
+#
+# ```sh
+# log_err <message>
+# => log $LOG_ERR <message>
+# ```
+#
+# Example:
+#
+# ```sh
+# log_err "my message"
+# => 2021-05-04T22:57:54.000000000+00:00 7e7151dc24bd511098ebb248771d8ffb abc.example.com 1234 3 my message
+# ```
+#
+log_err() {
+    log $LOG_ERR "$@"
+}
+
+# log_warn
+#
+# Log level warn: log a datestamp, unique random id, hostname, process id, log level, and message.
+#
+# Syntax:
+#
+# ```sh
+# log_warn <message>
+# => log $LOG_WARN <message>
+# ```
+#
+# Example:
+#
+# ```sh
+# log_warn "my message"
+# => 2021-05-04T22:57:54.000000000+00:00 7e7151dc24bd511098ebb248771d8ffb abc.example.com 1234 4 my message
+# ```
+#
+log_warn() {
+    log $LOG_WARN "$@"
+}
+
+# log_notice
+#
+# Log level notice: log a datestamp, unique random id, hostname, process id, log level, and message.
+#
+# Syntax:
+#
+# ```sh
+# log_notice <message>
+# => log $LOG_NOTICE <message>
+# ```
+#
+# Example:
+#
+# ```sh
+# log_notice "my message"
+# => 2021-05-04T22:57:54.000000000+00:00 7e7151dc24bd511098ebb248771d8ffb abc.example.com 1234 5 my message
+# ```
+#
+log_notice() {
+    log $LOG_NOTICE "$@"
+}
+
+# log_info
+#
+# Log level info: log a datestamp, unique random id, hostname, process id, log level, and message.
+#
+# Syntax:
+#
+# ```sh
+# log_info <message>
+# => log $LOG_INFO <message>
+# ```
+#
+# Example:
+#
+# ```sh
+# log_info "my message"
+# => 2021-05-04T22:57:54.000000000+00:00 7e7151dc24bd511098ebb248771d8ffb abc.example.com 1234 6 my message
+# ```
+#
+log_info() {
+    log $LOG_INFO "$@"
+}
+
+# log_debug
+#
+# Log level debug: log a datestamp, unique random id, hostname, process id, log level, and message.
+#
+# Syntax:
+#
+# ```sh
+# log_debug <message>
+# => log $LOG_DEBUG <message>
+# ```
+#
+# Example:
+#
+# ```sh
+# log_debug "my message"
+# => 2021-05-04T22:57:54.000000000+00:00 7e7151dc24bd511098ebb248771d8ffb abc.example.com 1234 7 my message
+# ```
+#
+log_debug() {
+    log $LOG_DEBUG "$@"
+}
+
+# log_trace
+#
+# Log level trace: log a datestamp, unique random id, hostname, process id, log level, and message.
+#
+# Syntax:
+#
+# ```sh
+# log_trace <message>
+# => log $LOG_TRACE <message>
+# ```
+#
+# Example:
+#
+# ```sh
+# log_trace "my message"
+# => 2021-05-04T22:57:54.000000000+00:00 7e7151dc24bd511098ebb248771d8ffb abc.example.com 1234 8 my message
+# ```
+#
+log_trace() {
+    log $LOG_TRACE "$@"
+}
+
+##
+# Print messages with pretty formatting, colors, emojis, etc.
+##
+
+# Color settings
+#
+# Set pretty display of messages for success, warning, failure.
+#
+# If you wish to set these in your terminal, and your terminal supports
+# dollar strings with \E meaning escape, then you can use the following:
+#
+# ```sh
+# export PRINT_SUCCESS_START=$'\E[32m✅ Success: '
+# export PRINT_SUCCESS_START=$'\E[35m⚠️ Warning: '
+# export PRINT_FAILURE_START=$'\E[31m⛔ Failure: '
+# ```
+#
+if color && utf8; then
+        : ${PRINT_SUCCESS_START='[32m✅ Success: '}
+        : ${PRINT_SUCCESS_STOP='[0m'}
+        : ${PRINT_WARNING_START='[33m⚠️ Warning: '}
+        : ${PRINT_WARNING_START='[0m'}
+        : ${PRINT_FAILURE_START='[31m⛔ Failure: '}
+        : ${PRINT_FAILURE_STOP='[0m'}
+else
+        : ${PRINT_SUCCESS_START='Success: '}
+        : ${PRINT_SUCCESS_STOP=''}
+        : ${PRINT_WARNING_START='Warning: '}
+        : ${PRINT_WARNING_START=''}
+        : ${PRINT_FAILURE_START='Failure: '}
+        : ${PRINT_FAILURE_STOP=''}
+fi
+
+# print_success
+#
+# Print a success message to stdout.
+#
+# Syntax:
+#
+# ```sh
+# print_success <message>
+# STDOUT=> <message>
+# ```
+#
+# Example:
+#
+# ```sh
+# print_success "This is a success message."
+# => This is a success message.
+# ```
+#
+# The output can be customized by setting:
+#
+#  * PRINT_SUCCESS_START
+#  * PRINT_SUCCESS_STOP
+#
+print_success() {
+        printf %s%s%s\\n "${PRINT_SUCCESS_START:-}" "$*" "${PRINT_SUCCESS_STOP:-}"
+}
+
+# print_warning
+#
+# Print a warning message to stdout.
+#
+# Syntax:
+#
+# ```sh
+# print_warning <message>
+# STDOUT=> <message>
+# ```
+#
+# Example:
+#
+# ```sh
+# print_warning "This is a warning message."
+# => This is a warning message.
+# ```
+#
+# The output can be customized by setting:
+#
+#  * PRINT_WARNING_START
+#  * PRINT_WARNING_STOP
+#
+print_warning() {
+        printf %s%s%s\\n "${PRINT_WARNING_START:-}" "$*" "${PRINT_WARNING_STOP:-}"
+}
+
+# print_failure
+#
+# Print a failure message to stdout.
+#
+# Syntax:
+#
+# ```sh
+# print_failure <message>
+# STDOUT=> <message>
+# ```
+#
+# Example:
+#
+# ```sh
+# print_failure "This is a failure message."
+# => This is a failure message.
+# ```
+#
+# The output can be customized by setting:
+#
+#  * PRINT_FAILURE_START
+#  * PRINT_FAILURE_STOP
+#
+print_failure() {
+        printf %s%s%s\\n "${PRINT_FAILURE_START:-}" "$*" "${PRINT_FAILURE_STOP:-}"
+}
+
+##
+# Date & time helpers
+##
+
+# now
+#
+# Get a datetime as our preferred ISO format.
+#
+# Syntax:
+#
+# ```sh
+# now
+# => <datetime as our preferred ISO format>
+# ```
+#
+# Example with the current datetime:
+#
+# ```sh
+# now
+# => 2021-05-04T22:59:28.769653000+00:00
+# ```
+#
+# Example with a custom datetime, if your date command offers option -d:
+#
+# ```sh
+# now -d "January 1, 2021"
+# => 2021-01-01T00:00:00.000000000+00:00
+# ```
+#
+# We prefer this date-time format for many of our scripts:
+#
+# * We prefer ISO standard because it's well documented and supported.
+#   Specifically, we use ISO "YYYY-MM-DDTHH:MM:SS.NNNNNNNNN+00:00".
+#
+# * We prefer nanosecond width because it aligns with high-speed systems.
+#   Specifically, we use GNU `date` and tools that print nanoseconds.
+#
+# * We prefer timezone width because it aligns with localized systems.
+#   Specifically, we use some systems and tools that require timezones.
+#
+# Note: the custom datetime capabilty relies on the system "date" command,
+# because this script sends the args along to the system "date" command.
+# For example Linux GNU "date" handles this, but macOS BSD "date" doesn't.
+#
+# shellcheck disable=SC2120
+now() {
+        date -u "+%Y-%m-%dT%H:%M:%S.%N+00:00" "$@" | sed 's/N/000000000/'
+}
+
+# now_date
+#
+# Get a date as our preferred ISO format
+#
+# Syntax:
+#
+# ```sh
+# now_date
+# => <date as our preferred ISO format>
+# ```
+#
+# Example:
+#
+# ```sh
+# now_date
+# => 2021-05-04
+# ```
+#
+# Example with a custom date, if your date command offers option -d:
+#
+# ```sh
+# now_date -d "January 1, 2021"
+# => 2021-01-01
+# ```
+#
+now_date() {
+        # shellcheck disable=SC2120
+        date -u "+%Y-%m-%d" "$@"
+}
+
+# sec
+#
+# Get the current time in POSIX seconds.
+#
+# Syntax:
+#
+# ```sh
+# sec
+# => <current time as posix sections>
+# ```
+#
+# Example:
+#
+# ```sh
+# sec
+# => 1620169178
+# ```
+#
+sec() {
+        date "+%s" "$@"
+}
+
+# age
+#
+# Get the age of a POSIX epoch time compared to now.
+#
+# Syntax:
+#
+# ```sh
+# age <epoch>
+# => <difference in seconds between epoch and now>
+# ```
+#
+# Example:
+#
+# ```sh
+# age 1620169178
+# => 19
+# ```
+#
+age() {
+        printf %s\\n "$(( $(date "+%s") - $1 ))"
+}
+
+# age_lt
+#
+# Is the age of a POSIX epoch time compard to now
+# less than a given number of seconds? A.k.a. newer?
+#
+# Syntax:
+#
+# ```sh
+# age_lt <epoch> <seconds>
+# => true or false
+# ```
+#
+# Example:
+#
+# ```sh
+# age_lt 1620169178 20
+# => true
+# ```
+#
+age_lt() {
+        [ "$(( $(date "+%s") - $1 ))" -lt "$2" ]
+}
+
+# age_gt
+#
+# Is the age of a POSIX epoch time compard to now
+# greater than a given number of seconds? A.k.a. older?
+#
+# Syntax:
+#
+# ```sh
+# age_gt <epoch> <seconds>
+# => true or false
+# ```
+#
+# Example:
+#
+# ```sh
+# age_gt 1620169178 18
+# => true
+# ```
+#
+age_gt() {
+        [ "$(( $(date "+%s") - $1 ))" -gt "$2" ]
+}
+
+# leap_year
+#
+# Is the year a leap year?
+#
+# Syntax:
+#
+# ```sh
+# leap_year <year>
+# => true or false
+# ```
+#
+# Examples:
+#
+# ```sh
+# leap_year 2023 => false
+# leap_year 2024 => true
+# leap_year 2025 => false
+# ```
+#
+leap_year() {
+        (( !($1 % 4) && ($1 % 100 || !($1 % 400) ) ))
+}
+
+# datetime_mday_max
+#
+# Given a datetime (or year and month), calculate the maximum month-day number.
+#
+# Syntax:
+#
+# ```sh
+# datetime_mday_max <datetime | yyyy-mm*>
+# => true or false
+# ```
+#
+# Examples:
+#
+# ```sh
+# datetime_mday_max 2026-01 => 31
+# datetime_mday_max 2026-02 => 28
+# ```
+#
+datetime_mday_max() {
+    datetime="$1"
+    year=$(( ${datetime:0:4} ))
+    month=$(( ${datetime:5:2} ))
+    case $month in
+        1|3|5|7|8|10|12) printf 31 ;;
+        4|6|9|11) printf 30 ;;
+        2) leap_year $year && printf 29 || printf 28 ;;
+        *) die $EXIT_USAGE "datetime_mday_max $datetime" ;;
+    esac
+}
+
+# datetime_format_for_at_command
+#
+# Given a datetime as ISO 8601 format "yyyy-mm-ddThh:mm:ss"
+# return the format for `at` command "yyyymmdddhhmm.ss".
+#
+# Syntax:
+#
+# ```sh
+# datetime_format_for_at_command <datetime>
+# => <yyyymmdddhhmm.ss>
+# ```
+#
+# Example:
+#
+# ```sh
+# datetime_format_for_at_command 2026-12-31T01:02:03
+# => 202612310102.03
+# ```
+#
+datetime_format_for_at_command() {
+    datetime="$1"
+    printf "${datetime:0:4}${datetime:5:2}${datetime:8:2}${datetime:11:2}${datetime:14:2}.${datetime:17:2}"
+}
+
+# datetime_format_for_pmset_command
+#
+# Given a datetime as ISO 8601 format "yyyy-mm-ddThh:mm:ss"
+# return the format for `pmset` command  "mm/dd/yy hh:mm:ss".
+#
+# Syntax:
+#
+# ```sh
+# datetime_format_for_pmset_command <datetime>
+# => <mm/dd/yy hh:mm:ss>
+# ```
+#
+# Example:
+# ```sh
+# datetime_format_for_pmset_command 2026-12-31T01:02:03
+# => 12/31/26 01:02:03
+# ```
+#
+datetime_format_for_pmset_command() {
+    datetime="$1"
+    printf "${datetime:5:2}/${datetime:8:2}/${datetime:2:2} ${datetime:11:8}"
+}
+
+# datetime_add
+#
+# Given a datetime, add years, months, days, hours, minutes, seconds.
+#
+# Syntax:
+#
+# ```sh
+# datetime_add <datetime> <years> <months> <days> <hours> <minutes> <seconds>
+# => <datetime>
+# ```
+#
+# Examples:
+#
+# ```sh
+# datetime_add 2000-01-01T00:00:00 0 0 0 0 0 1 => 2000-01-01T00:00:01 (next second)
+# datetime_add 2000-01-01T00:00:00 0 0 0 0 1 0 => 2000-01-01T00:01:00 (next minute)
+# datetime_add 2000-01-01T00:00:00 0 0 0 1 0 0 => 2000-01-01T01:00:00 (next hour)
+# datetime_add 2000-01-01T00:00:00 0 0 1 0 0 0 => 2000-01-02T00:00:00 (next day)
+# datetime_add 2000-01-01T00:00:00 0 1 0 0 0 0 => 2000-02-01T00:00:00 (next month)
+# datetime_add 2000-01-01T00:00:00 1 0 0 0 0 0 => 2001-01-01T00:00:00 (next year)
+# ```
+#
+# Examples of carry:
+#
+# ```sh
+# datetime_add 2000-01-01T00:00:00 0 0 0 0 0 1 => 2000-01-01T00:00:01 (next second)
+# datetime_add 2000-01-01T00:00:59 0 0 0 0 0 1 => 2000-01-01T00:01:00 (next minute)
+# datetime_add 2000-01-01T00:59:59 0 0 0 0 0 1 => 2000-01-01T01:00:00 (next hour)
+# datetime_add 2000-01-01T23:59:59 0 0 0 0 0 1 => 2000-01-02T00:00:00 (next day)
+# datetime_add 2000-01-31T23:59:59 0 0 0 0 0 1 => 2000-02-01T00:00:00 (next month)
+# datetime_add 2000-12-31T23:59:59 0 0 0 0 0 1 => 2001-01-01T00:00:00 (next year)
+# ```
+#
+datetime_add() {
+    datetime="$1"
+    year=$(( ${datetime:0:4} + $2 ))
+    month_0=$(( ${datetime:5:2} + $3 - 1))
+    mday_0=$(( ${datetime:8:2} + $4 - 1))
+    hour=$(( ${datetime:11:2} + $5 ))
+    minute=$(( ${datetime:14:2} + $6 ))
+    second=$(( ${datetime:17:2} + $7 ))
+    mday_max=$(datetime_mday_max "$1")
+    if [ $second  -ge 60 ]; then x=$(( $second / 60 )); second=$(( $second - $x * 60 )); minute=$(( $minute + x )); fi
+    if [ $minute  -ge 60 ]; then x=$(( $minute / 60 )); minute=$(( $minute - $x * 60 )); hour=$(( $hour + x )); fi
+    if [ $hour    -ge 24 ]; then x=$(( $hour / 24 )); hour=$(( $hour - $x * 24 )); mday_0=$(( $mday_0 + x )); fi
+    if [ $mday_0  -ge $mday_max ]; then x=$(( $mday_0 / $mday_max )); mday_0=$(( $mday_0 - $x * $mday_max )); month_0=$(( $month_0 + $x )); fi
+    if [ $month_0 -ge 12 ]; then x=$(( $month_0 / 12 )); month_0=$(( $month_0 - $x * 12 )); year=$(( $year + $x )); fi
+    printf "%04d-%02d-%02dT%02d:%02d:%02d" $year $(( $month_0 + 1 )) $(( $mday_0 + 1 )) $hour $minute $second
+}
+
+##
+# Validation helpers
+##
+
+# directory_exists
+#
+# Does a directory exist?
+#
+# Syntax:
+#
+# ```sh
+# directory_exists <directory_path>
+# => true or false
+# ```
+#
+# Example:
+#
+# ```sh
+# directory_exists /usr
+# => true
+#
+# directory_exists /loremipsum
+# => false
+# ```
+#
+directory_exists() {
+        test -d "$1"
+}
+
+# directory_exists_or_err
+#
+# Does a directory exist? If no then err.
+#
+# Syntax:
+#
+# ```sh
+# directory_exists_or_err <directory_path>
+# => true or err
+# ```
+#
+# Example:
+#
+# ```sh
+# directory_exists_or_err /usr
+# => true
+#
+# directory_exists_or_err /loremipsum
+# STDERR=> Directory should exist: /loremipsum
+# ```
+#
+directory_exists_or_err() {
+        directory_exists "$1" || err "Directory should exist: $1"
+}
+
+# directory_exists_or_die
+#
+# Does a directory exist? If no then die.
+#
+# Syntax:
+#
+# ```sh
+# directory_exists_or_die <directory_path>
+# => true or die
+# ```
+#
+# Example:
+#
+# ```sh
+# directory_exists_or_die /usr
+# => true
+#
+# directory_exists_or_die /loremipsum
+# STDERR=> Directory must exist: /loremipsum
+# EXIT=> $EXIT_IOERR
+# ```
+#
+directory_exists_or_die() {
+        directory_exists "$1" || die "$EXIT_IOERR" "Directory must exist: $1"
+}
+
+# file_exists
+#
+# Does a file exist?
+#
+# Syntax:
+#
+# ```sh
+# file_exists <file_path>
+# => true or false
+# ```
+#
+# Example:
+#
+# ```sh
+# file_exists foo.txt
+# => true
+#
+# file_exists loremipsum.txt
+# => false
+# ```
+#
+file_exists() {
+        test -f "$1"
+}
+
+# file_exists_or_err
+#
+# Does a file exist? If no then err.
+#
+# Syntax:
+#
+# ```sh
+# file_exists_or_err <file_path>
+# => true or err
+# ```
+#
+# Example:
+#
+# ```sh
+# file_exists_or_err foo.txt
+# => true
+#
+# file_exists_or_err loremipsum.txt
+# STDERR=> File should exist: loremipsum.txt
+# ```
+#
+file_exists_or_err() {
+        file_exists "$1" || err "File should exist: $1"
+}
+
+# file_exists_or_die
+#
+# Does a file exist? If no then die.
+#
+# Syntax:
+#
+# ```sh
+# file_exists_or_die <file_path>
+# => true or die
+# ```
+#
+# Example:
+#
+# ```sh
+# file_exists_or_die foo.txt
+# => true
+#
+# file_exists_or_die loremipsum.txt
+# STDERR=> File must exist: loremipsum.txt
+# EXIT=> $EXIT_IOERR
+# ```
+#
+file_exists_or_die() {
+        file_exists "$1" || die "$EXIT_IOERR" "File must exist: $1"
+}
+
+# file_not_empty
+#
+# Is a file not empty?
+#
+# Syntax:
+#
+# ```sh
+# file_not_empty <file_path>
+# => true or false
+# ```
+#
+# Example:
+#
+# ```sh
+# file_not_empty foo.txt
+# => true
+#
+# file_not_empty loremipsum.txt
+# => false
+# ```
+#
+file_not_empty() {
+        test -s "$1"
+}
+
+# file_not_empty_or_err
+#
+# Is a file not empty? If no then err.
+#
+# Syntax:
+#
+# ```sh
+# file_not_empty_or_err <file_path>
+# => true or err
+# ```
+#
+# Example:
+#
+# ```sh
+# file_not_empty_or_err foo.txt
+# => true
+#
+# file_not_empty_or_err loremipsum.txt
+# STDERR=> File should be not empty: loremipsum.txt
+# ```
+#
+file_not_empty_or_err() {
+        file_not_empty "$1" || err "File should be not empty: $1"
+}
+
+# file_not_empty_or_die
+#
+# Does a file exist? If no then die.
+#
+# Syntax:
+#
+# ```sh
+# file_not_empty_or_die <file_path>
+# => true or die
+# ```
+#
+# Example:
+#
+# ```sh
+# file_not_empty_or_die foo.txt
+# => true
+#
+# file_not_empty_or_die loremipsum.txt
+# STDERR=> File must be not empty: loremipsum.txt
+# EXIT=> $EXIT_IOERR
+# ```
+#
+file_not_empty_or_die() {
+        file_not_empty "$1" || err "File must be not empty: $1"
+}
+
+# symlink_exists
+#
+# Does a symlink exist?
+#
+# Syntax:
+#
+# ```sh
+# symlink_exists <symlink_path>
+# => true or false
+# ```
+#
+# Example:
+#
+# ```sh
+# symlink_exists foo.txt
+# => true
+#
+# symlink_exists loremipsum.txt
+# => false
+# ```
+#
+symlink_exists() {
+        test -h "$1"
+}
+
+# symlink_exists_or_err
+#
+# Does a symlink exist? If no then err.
+#
+# Syntax:
+#
+# ```sh
+# symlink_exists_or_err <symlink_path>
+# => true or err
+# ```
+#
+# Example:
+#
+# ```sh
+# symlink_exists_or_err foo.txt
+# => true
+#
+# symlink_exists_or_err loremipsum.txt
+# STDERR=> Symlink should exist: loremipsum.txt
+# ```
+#
+symlink_exists_or_err() {
+        symlink_exists "$1" || err "Symlink should exist: $1"
+}
+
+# symlink_exists_or_die
+#
+# Does a symlink exist? If no then die.
+#
+# Syntax:
+#
+# ```sh
+# symlink_exists_or_die <symlink_path>
+# => true or die
+# ```
+#
+# Example:
+#
+# ```sh
+# symlink_exists_or_die foo.txt
+# => true
+#
+# symlink_exists_or_die loremipsum.txt
+# STDERR=> Symlink must exist: loremipsum.txt
+# EXIT=> $EXIT_IOERR
+# ```
+#
+symlink_exists_or_die() {
+        symlink_exists "$1" || die "$EXIT_IOERR" "Symlink must exist: $1"
+}
+
+# command_exists
+#
+# Does a command exist?
+#
+# Syntax:
+#
+# ```sh
+# command_exists <command_name>
+# => true or false
+# ```
+#
+# Example:
+#
+# ```sh
+# command_exists grep
+# => true
+#
+# command_exists curl
+# => false
+# ```
+#
+command_exists() {
+        command -v "$1" >/dev/null 2>&1
+}
+
+# command_exists_or_err
+#
+# Does a command exist? If no then err.
+#
+# Syntax:
+#
+# ```sh
+# command_exists_or_err <command_name>
+# => true or err
+# ```
+#
+# Example:
+#
+# ```sh
+# command_exists_or_err grep
+# => true
+#
+# command_exists_or_err loremipsum
+# STDERR=> Command should exist: loremipsum
+# ```
+#
+command_exists_or_err() {
+        command_exists "$1" || err "Command should exist: $1"
+}
+
+# command_exists_or_die
+#
+# Does a command exist? If no then die.
+#
+# Syntax:
+#
+# ```sh
+# command_exists_or_die <command_name>
+# => true or die
+# ```
+#
+# Example:
+#
+# ```sh
+# command_exists_or_die grep
+# => true
+#
+# command_exists_or_die loremipsum
+# STDERR=> Command needed: loremipsum
+# EXIT=> $EXIT_UNAVAILABLE
+# ```
+#
+command_exists_or_die() {
+        command_exists "$1" || die "$EXIT_UNAVAILABLE" "Command must exist: $1"
+}
+
+# command_version_exists
+#
+# Does a command version exist?
+#
+# Syntax:
+#
+# ```sh
+# command_version_exists <command_name> <version_actual> <version_minimum>
+# => true or false
+# ```
+#
+# Example:
+#
+# ```sh
+# command_version_exists grep 2.2 1.1
+# => true
+#
+# command_version_exists grep 1.1 2.2
+# => false
+# ```
+#
+command_version_exists() {
+        command_exists "$1" && version "$2" "$3"
+}
+
+
+# command_version_exists_or_err
+#
+# Does a command version exist? If no then err.
+#
+# Syntax:
+#
+# ```sh
+# command_version_exists_or_err <command_name> <version_actual> <version_minimum>
+# => true or err
+# ```
+#
+# Example:
+#
+# ```sh
+# command_version_exists_or_err grep 2.2 1.1
+# => true
+#
+# command_version_exists_or_err grep 1.1 2.2
+# STDERR=> Command version should exist: grep 1.1 >= 2.2
+# ```
+#
+command_version_exists_or_err() {
+        command_version_exists "$1" "$2" "$3" || err "Command version should exist: $1 $2 should be >= $3"
+}
+
+# command_version_exists_or_die
+#
+# Does a command version exist? If no then die.
+#
+# Syntax:
+#
+# ```sh
+# command_version_exists_or_die <command_name> <version_actual> <version_minimum>
+# => true or die
+# ```
+#
+# Example:
+#
+# ```sh
+# command_version_exists_or_die grep 2.2 1.1
+# => true
+#
+# command_version_exists_or_die grep 1.1 2.2
+# STDERR=> Command and version must exist: grep 1.1 >= 1.2
+# EXIT=> $EXIT_UNAVAILABLE
+# ```
+#
+command_version_exists_or_die() {
+        command_version_exists "$1" "$2" "$3" || die "$EXIT_UNAVAILABLE" "Command version must exist: $1 $2 must be >= $3"
+}
+
+# var_exists
+#
+# Does a variable exist?
+#
+# Syntax:
+#
+# ```sh
+# var_exists <var_name>
+# => true or false
+# ```
+#
+# Example:
+#
+# ```sh
+# var_exists HOME
+# => true
+#
+# var_exists FOO
+# => false
+# ```
+#
+var_exists() {
+        ! eval 'test -z ${'$1'+x}'
+}
+
+# var_exists_or_err
+#
+# Does a variable exist? If no then err.
+#
+# Syntax:
+#
+# ```sh
+# var_exists_or_err <var_name>
+# => true or err
+# ```
+#
+# Example:
+#
+# ```sh
+# var_exists_or_err HOME
+# => true
+#
+# var_exists_or_err FOO
+# STDERR=> Variable should exist: FOO
+# ```
+#
+var_exists_or_err() {
+        var_exists "$1" || err "Variable should exist: $1"
+}
+
+# var_exists_or_die
+#
+# Does a variable exist? If no then die.
+#
+# Syntax:
+#
+# ```sh
+# var_exists_or_die <var_name>
+# => true or die
+# ```
+#
+# Example:
+#
+# ```sh
+# var_exists_or_die HOME
+# => true
+#
+# var_exists_or_die FOO
+# STDERR=> Variable must exist: FOO
+# EXIT=> $EXIT_CONFIG
+# ```
+#
+var_exists_or_die() {
+        var_exists "$1" || die "$EXIT_CONFIG" "Variable must exist: $1"
+}
+
+# version
+#
+# Is a version number sufficient?
+#
+# Syntax:
+#
+# ```sh
+# version <version_actual> <version_minimum>
+# => true or false
+# ```
+#
+# Example:
+#
+# ```sh
+# version 2.2 1.1
+# => true
+#
+# version 1.1 2.2
+# => false
+# ```
+#
+version() {
+        [ "$(cmp_digits "$1" "$2")" -ge 0 ]
+}
+
+# version_or_err: ensure a version is sufficient
+#
+# Is a version number sufficient? If no then err.
+#
+# Syntax:
+#
+# ```sh
+# version_or_err <version_actual> <version_minimum>
+# => true or err
+# ```
+#
+# Example:
+#
+# ```sh
+# version_or_err 2.2 1.1
+# => true
+#
+# version_or_err 1.1 2.2
+# STDERR=> Version 1.1 should be >= 2.2
+# ```
+#
+version_or_err() {
+        version "$1" "$2" || err "Version $1 should be >= $2"
+}
+
+# version_or_die: ensure a version is sufficient
+#
+# Is a version number sufficient? If no then die.
+#
+# Syntax:
+#
+# ```sh
+# version_or_die <version_actual> <version_minimum>
+# => true or die
+# ```
+#
+# Example:
+#
+# ```sh
+# version_or_die 2.2 1.1
+# => true
+#
+# version_or_die 1.1 2.2
+# STDERR=> Version 1.1 must be >= 2.2
+# EXIT=> $EXIT_CONFIG
+# ```
+#
+version_or_die() {
+        version "$1" "$2" || die "$EXIT_CONFIG" "Version $1 must be >= $2"
+}
+
+# grep_exists
+#
+# Does a grep exist?
+#
+# Syntax:
+#
+# ```sh
+# grep_exists [args]
+# => true or false
+# ```
+#
+# Example:
+#
+# ```sh
+# grep_exists alfa foo.txt
+# => true
+#
+# grep_exists alfa loremipsum.txt
+# => false
+# ```
+#
+grep_exists() {
+       grep -q -m 1 "$@"
+}
+
+# grep_exists_or_err
+#
+# Does a grep exist? If no then err.
+#
+# Syntax:
+#
+# ```sh
+# grep_exists_or_err [args]
+# => true or err
+# ```
+#
+# Example:
+#
+# ```sh
+# grep_exists_or_err alfa foo.txt
+# => true
+#
+# grep_exists_or_err alfa loremipsum.txt
+# STDERR=> grep should exist: alfa loremipsum.txt
+# ```
+#
+grep_exists_or_err() {
+        grep_exists "$@" || err "grep should exist: " "$@"
+}
+
+# grep_exists_or_die
+#
+# Does a grep exist? If no then die.
+#
+# Syntax:
+#
+# ```sh
+# grep_exists_or_die [args]
+# => true or die
+# ```
+#
+# Example:
+#
+# ```sh
+# grep_exists_or_die alfa foo.txt
+# => true
+#
+# grep_exists_or_die alfa loremipsum.txt
+# STDERR=> grep must exist: alfa loremipsum.txt
+# EXIT=> $EXIT_IOERR
+# ```
+#
+grep_exists_or_die() {
+        grep_exists "$@" || err "grep must exist: " "$@"
+}
+
+##
+# Number helpers
+##
+
+# int
+#
+# Convert a number string to an integer number string.
+#
+# Syntax:
+#
+# ```sh
+# int <number_string>
+# => integer
+# ```
+#
+# Example:
+#
+# ```sh
+# int 1.23
+# => 1
+# ```
+#
+int() {
+        printf %s\\n "$1" | awk '{ print int($0); exit }'
+}
+
+# sum
+#
+# Print the sum of numbers.
+#
+# Syntax:
+#
+# ```sh
+# sum <number> ...
+# => sum of numbers
+# ```
+#
+# Example:
+#
+# ```sh
+# sum 1 2 3
+# => 6
+# ```
+#
+sum() {
+        awk '{for(i=1; i<=NF; i++) sum+=$i; } END {print sum}'
+}
+
+##
+# Comparison helpers
+##
+
+# cmp_alnums
+#
+# Compare alnums as groups, such as for word version strings.
+#
+# Syntax:
+#
+# ```sh
+# cmp_alnums <alnum_string> <alnum_string>
+# => 0 or -1 or 1
+# ```
+#
+# Example:
+#
+# ```
+# cmp_alnums "a.b.c" "a.b.c"
+# => 0 (zero means left == right)
+#
+# cmp_alnums "a.b.c" "a.b.d"
+# => -1 (negative one means left < right)
+#
+# cmp_alnums "a.b.d" "a.b.c"
+# => 1 (positive one means left > right)
+# ```
+#
+cmp_alnums() {
+        if [ "$1" = "$2" ]; then
+                echo "0"; return 0
+        fi
+    	a=$(printf %s\\n "$1" | sed 's/^[^[:alnum:]]*//')
+    	b=$(printf %s\\n "$2" | sed 's/^[^[:alnum:]]*//')
+    	while true; do
+    		x=$(printf %s\\n "$a" | sed 's/[^[:alnum:]].*//')
+    		y=$(printf %s\\n "$b" | sed 's/[^[:alnum:]].*//')
+    		if [ "$x" = "" ] && [ "$y" = "" ]; then
+    			echo "0"; return 0
+    		fi
+    		if [ "$x" = "" ] || [ "$(expr "$x" \< "$y")" = 1 ]; then
+    			echo "-1"; return 0
+    		fi
+    		if [ "$y" = "" ] || [ "$(expr "$x" \> "$y")" = 1 ]; then
+    			echo "1"; return 0
+    		fi
+    		a=$(printf %s\\n "$a" | sed 's/^[[:alnum:]]*[^[:alnum:]]*//')
+    		b=$(printf %s\\n "$b" | sed 's/^[[:alnum:]]*[^[:alnum:]]*//')
+    	done
+}
+
+# cmp_digits
+#
+# Compare digits as groups, such as for numeric version strings.
+#
+# Syntax:
+#
+# ```sh
+# cmp_digits <digits_string> <digits_string>
+# => 0 or -1 or 1
+# ```
+#
+# Example:
+#
+# ```
+# cmp_digits 1.2.3 1.2.3
+# => 0 (zero means left == right)
+#
+# cmp_digits 1.2.3 1.2.4
+# => -1 (negative one means left < right)
+#
+# cmp_digits 1.2.4 1.2.3
+# => 1 (positive one means left > right)
+# ```
+#
+cmp_digits() {
+        if [ "$1" = "$2" ]; then
+                echo "0"; return 0
+        fi
+    	a=$(printf %s\\n "$1" | sed 's/^[^[:digit:]]*//')
+    	b=$(printf %s\\n "$2" | sed 's/^[^[:digit:]]*//')
+    	while true; do
+    		x=$(printf %s\\n "$a" | sed 's/[^[:digit:]].*//')
+    		y=$(printf %s\\n "$b" | sed 's/[^[:digit:]].*//')
+    		if [ "$x" = "" ] && [ "$y" = "" ]; then
+    			echo "0"; return 0
+    		fi
+    		if [ "$x" = "" ] || [ $x -lt $y ]; then
+    			echo "-1"; return 0
+    		fi
+    		if [ "$y" = "" ] || [ $x -gt $y ]; then
+    			echo "1"; return 0
+    		fi
+    		a=$(printf %s\\n "$a" | sed 's/^[[:digit:]]*[^[:digit:]]*//')
+    		b=$(printf %s\\n "$b" | sed 's/^[[:digit:]]*[^[:digit:]]*//')
+    	done
+}
+
+##
+# Extensibility helpers
+##
+
+# dot_all
+#
+# Source all the executable files in a given directory and subdirectories.
+#
+# Syntax:
+#
+# ```sh
+# dot_all <directory_path>
+# => source all executable files
+# ```
+#
+# Example:
+#
+# ```sh
+# dot_all ~/temp
+# => . ~/temp/a.sh
+# => . ~/temp/b.pl
+# => . ~/temp/c.js
+# ```
+#
+dot_all() {
+        find "${1:-.}" -type f \( -perm -u=x -o -perm -g=x -o -perm -o=x \) -exec test -x {} \; -exec . {} \;
+}
+
+# run_all
+#
+# Run all the executable files in a given directory and subdirectories.
+#
+# Syntax:
+#
+# ```sh
+# run_all <directory_path>
+# => run all executable files
+# ```
+#
+# Example:
+#
+# ```sh
+# run_all ~/temp
+# => ~/temp/a.sh
+# => ~/temp/b.pl
+# => ~/temp/c.js
+# ```
+#
+run_all() {
+        find "${1:-.}" -type f \( -perm -u=x -o -perm -g=x -o -perm -o=x \) -exec test -x {} \; -exec {} \;
+}
+
+# sh_all
+#
+# Shell all the executable files in a given directory and subdirectories.
+#
+# Syntax:
+#
+# ```sh
+# sh_all <directory_path>
+# => shell all executable files
+# ```
+#
+# Example:
+#
+# ```sh
+# sh_all ~/temp
+# => sh -c ~/temp/a.sh
+# => sh -c ~/temp/b.pl
+# => sh -c ~/temp/c.js
+# ```
+#
+sh_all() {
+        find "${1:-.}" -type f \( -perm -u=x -o -perm -g=x -o -perm -o=x \) -exec test -x {} \; -print0 | xargs -0I{} -n1 sh -c "{}"
+}
+
+# rm_all
+#
+# Remove all the files in a given directory and subdirectories-- use with caution.
+#
+# Syntax:
+#
+# ```sh
+# rm_all <directory_path>
+# => remove all files
+# ```
+#
+# Example:
+#
+# ```sh
+# rm_all ~/temp
+# => rm ~/temp/a.sh
+# => rm ~/temp/b.pl
+# => rm ~/temp/c.js
+# ```
+#
+rm_all() {
+        find "${1:-.}" -type f -exec rm {} \;
+}
+
+##
+# Text helpers
+##
+
+# trim
+#
+# Remove any space characters at the text's start or finish.
+#
+# Syntax:
+#
+# ```sh
+# trim <string>
+# => string without leading/trailing spaces
+# ```
+#
+# Example:
+#
+# ```sh
+# trim "  foo  "
+# => foo
+#```
+#
+trim() {
+        printf %s\\n "$*" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
+}
+
+# slug
+#
+# Convert a string from any characters to solely lowercase and single internal
+# dash characters.
+#
+# Syntax:
+#
+# ```sh
+# slug <string>
+# => string with solely lowercase and single internal dash characters
+# ```
+#
+# Example:
+#
+# ```sh
+# slug "**Foo** **Goo** **Hoo**"
+# => foo-goo-hoo
+#```
+#
+slug() {
+        printf %s\\n "$*" | sed 's/[^[:alnum:]]/-/g; s/--*/-/g; s/^-*//; s/-*$//;' | tr '[[:upper:]]' '[[:lower:]]'
+}
+
+# slugs
+#
+# Convert a string from any characters to solely lowercase and single internal
+# dash characters and slash characters.
+#
+# Syntax:
+#
+# ```sh
+# slugs <string>
+# => string with solely lowercase and single internal dash characters and slash characters
+# ```
+#
+# Example:
+#
+# ```sh
+# slugs "**Foo** / **Goo** / **Hoo**"
+# => foo/goo/hoo
+#```
+#
+slugs(){
+        printf %s\\n "$*" | sed 's/[^[:alnum:]\/]/-/g; s/--*/-/g; s/^-*//; s/-*$//; s/-*\/-*/\//g' | tr '[[:upper:]]' '[[:lower:]]'
+}
+
+# upper_case
+#
+# Convert text from any lowercase letters to uppercase letters.
+#
+# Syntax:
+#
+# ```sh
+# upper_case <string>
+# => string with uppercase not lowercase
+# ```
+#
+# Example:
+#
+# ```sh
+# upper_case AbCdEf
+# => ABCDEF
+#```
+#
+upper_case() {
+        printf %s\\n "$*" | tr '[[:lower:]]' '[[:upper:]]'
+}
+
+# lower_case
+#
+# Convert text from any uppercase letters to lowercase letters.
+#
+# Syntax:
+#
+# ```sh
+# lower_case <string>
+# => string with lowercase nor uppercase
+# ```
+#
+# Example:
+#
+# ```sh
+# lower_case AbCdEf
+# => abcdef
+#```
+#
+lower_case() {
+        printf %s\\n "$*" | tr '[[:upper:]]' '[[:lower:]]'
+}
+
+# kebab_case
+#
+# Convert a string from any characters to solely alphanumeric and single internal dash characters.
+#
+# Syntax:
+#
+# ```sh
+# kebab_case <string>
+# => string with solely alphanumeric and single internal dash characters
+# ```
+#
+# Example:
+#
+# ```sh
+# kebab_case "**Foo** **Goo** **Hoo**"
+# => Foo-Goo-Hoo
+#```
+#
+kebab_case() {
+        printf %s\\n "$*" | sed 's/[^[:alnum:]]\{1,\}/-/g; s/-\{2,\}/-/g; s/^-\{1,\}//; s/-\{1,\}$//;'
+}
+
+# snake_case
+#
+# Convert a string from any characters to solely alphanumeric and single internal underscore characters.
+#
+# Syntax:
+#
+# ```sh
+# snake_case <string>
+# => string with solely alphanumeric and single internal underscore characters
+# ```
+#
+# Example:
+#
+# ```sh
+# snake_case "**Foo** **Goo** **Hoo**"
+# => Foo_Goo_Hoo
+#```
+#
+snake_case() {
+        printf %s\\n "$*" | sed 's/[^[:alnum:]]\{1,\}/_/g; s/_\{2,\}/_/g; s/^_\{1,\}//; s/_\{1,\}$//;'
+}
+
+# space_case
+#
+# Convert a string from any characters to solely alphanumeric and single internal space characters.
+#
+# Syntax:
+#
+# ```sh
+# space_case <string>
+# => string with solely solely alphanumeric and single internal space characters
+# ```
+#
+# Example:
+#
+# ```sh
+# space_case "**Foo** **Goo** **Hoo**"
+# => Foo Goo Hoo
+#```
+#
+space_case() {
+        printf %s\\n "$*" | sed 's/[^[:alnum:]]\{1,\}/ /g; s/ \{2,\}/ /g; s/^ \{1,\}//; s/ \{1,\}$//;'
+}
+
+# touch_case
+#
+# Convert a string from any characters to solely a command "touch -t" timestamp format.
+#
+# Syntax:
+#
+# ```sh
+# touch_case <string>
+# => string with solely a command "touch -t" timestamp format
+# ```
+#
+# Example:
+#
+# ```sh
+# touch_case "Foo  2021-05-04 22:57:54 Goo"
+# => 202105042257.54
+# ```
+#
+touch_case() {
+        printf %s\\n "$*" | sed 's/[^[:digit:]]//g; s/^\([[:digit:]]\{12\}\)\([[:digit:]]\{2\}\)/\1.\2/;'
+}
+
+# select_character_class
+#
+# Get a string's characters that match a class, with optional offset and length.
+#
+# Syntax:
+#
+# ```sh
+# select_character_class <string> <class> [offset [length]]
+# => selected characters
+# ```
+#
+# Example with character class:
+#
+# ```sh
+# select_character_class foo123goo456 alpha
+# => foogoo
+# ```
+#
+# Example with character class and substring offset:
+#
+# ```sh
+# select_character_class foo123goo456 alpha 3
+# => goo
+# ```
+#
+# Example with character class and substring offset and length:
+#
+# ```sh
+# select_character_class foo123goo456 alpha 3 1
+# => g
+# ```
+#
+select_character_class() {
+	string=${1//[^[:$2:]]/}
+	offset=${3:-0}
+	length=${4:-${#string}}
+	printf %s\\n ${string:$offset:$length}
+}
+
+# reject_character_class
+#
+# Get a string's characters that don't match a class, with optional offset and length.
+#
+# Syntax:
+#
+# ```sh
+# reject_character_class <string> <class> [offset [length]]
+# => rejected characters
+# ```
+#
+# Example with character class:
+#
+# ```sh
+# reject_character_class foo123goo456 alpha
+# => -123--456
+# ```
+#
+# Example with character class and substring offset:
+#
+# ```sh
+# reject_character_class foo123goo456 alpha 6
+# => 456
+# ```
+#
+# Example with character class and substring offset and length:
+#
+# ```sh
+# reject_character_class foo123goo456 alpha 6 1
+# => 4
+# ```
+#
+reject_character_class() {
+	string=${1//[[:$2:]]/}
+	offset=${3:-0}
+	length=${4:-${#string}}
+	printf %s\\n ${string:$offset:$length}
+}
+
+##
+# Random character helpers
+##
+
+# random_char
+#
+# Syntax:
+#
+# ```sh
+# random_char [characters [length]]
+# => random characters
+# ```
+#
+# Example:
+#
+# ```sh
+# random_char ABCDEF 8
+# => CBACBFDD
+#```
+#
+# Example hexadecimal digit uppercase:
+#
+# ```sh
+# random_char 0-9A-F 8
+# => FC56A95C
+#```
+#
+# Example character class for uppercase letters:
+#
+# ```sh
+# random_char '[:upper:]' 8
+# => ZMGIQBJB
+#```
+#
+# POSiX character classes for ASCII characters:
+#
+# ```txt
+# Class       Pattern        Description
+# ----------  -------------  -----------
+# [:upper:]   [A-Z]          uppercase letters
+# [:lower:]   [a-z]          lowercase letters
+# [:alpha:]   [A-Za-z]       uppercase letters and lowercase letters
+# [:alnum:]   [A-Za-z0-9]    uppercase letters and lowercase letters and digits
+# [:digit:]   [0-9]          digits
+# [:xdigit:]  [0-9A-Fa-f]    hexadecimal digits
+# [:punct:]                  punctuation (all graphic characters except letters and digits)
+# [:blank:]   [ \t]          space and TAB characters only
+# [:space:]   [ \t\n\r\f\v]  whitespace characters (space, tab, newline, return, feed, vtab)
+# [:cntrl:]                  control characters
+# [:graph:]   [^ [:cntrl:]]  graphic characters (all characters which have graphic representation)
+# [:print:]   [[:graph:] ]   graphic characters and space
+# ```
+#
+random_char() {
+        chars=${1:-'[:graph:]'}
+        len=${2-1}
+        printf "%s\n" $(LC_ALL=C < /dev/urandom tr -dc "$chars" | head -c"$len")
+}
+
+# random_char_alnum
+#
+# Random characters using class [:alnum:].
+#
+# Syntax:
+#
+# ```sh
+# random_char_alnum [length]
+# => random characters in class [:alnum:]
+# ```
+#
+# Example:
+#
+# ```sh
+# random_char_alnum 8
+# => 1Yp7M7wc
+#```
+#
+random_char_alnum() {
+        random_char '[:alnum:]' "$@"
+}
+
+# random_char_alpha
+#
+# Random characters using class [:alpha:].
+#
+# Syntax:
+#
+# ```sh
+# random_char_alpha [length]
+# => random characters in class [:alpha:]
+# ```
+#
+# Example:
+#
+# ```sh
+# random_char_alpha 8
+# => dDSmQlYD
+#```
+#
+random_char_alpha() {
+        random_char '[:alpha:]' "$@"
+}
+
+# random_char_blank
+#
+# Random characters using class [:blank:].
+#
+# Syntax:
+#
+# ```sh
+# random_char_blank [length]
+# => random characters in class [:blank:]
+# ```
+#
+# Example:
+#
+# ```sh
+# random_char_blank 8
+# => "  \t  \t  \t"
+#```
+#
+random_char_blank() {
+        random_char '[:blank:]' "$@"
+}
+
+# random_char_cntrl
+#
+# Random characters using class [:cntrl:].
+#
+# Syntax:
+#
+# ```sh
+# random_char_cntrl [length]
+# => random characters in class [:cntrl:]
+# ```
+#
+# Example:
+#
+# ```sh
+# random_char_cntrl 8
+# => "^c^m^r^z^a^e^p^u"
+#```
+#
+random_char_cntrl() {
+        random_char '[:cntrl:]' "$@"
+}
+
+# random_char_digit
+#
+# Random characters using class [:digit:].
+#
+# Syntax:
+#
+# ```sh
+# random_char_digit [length]
+# => random characters in class [:digit:]
+# ```
+#
+# Example:
+#
+# ```sh
+# random_char_digit 8
+# => 36415110
+#```
+#
+random_char_digit() {
+        random_char '[:digit:]' "$@"
+}
+
+# random_char_graph
+#
+# Random characters using class [:graph:].
+#
+# Syntax:
+#
+# ```sh
+# random_char_graph [length]
+# => random characters in class [:graph:]
+# ```
+#
+# Example:
+#
+# ```sh
+# random_char_graph 8
+# => e'2-3d+9
+#```
+#
+random_char_graph() {
+        random_char '[:graph:]' "$@"
+}
+
+# random_char_lower
+#
+# Random characters using class [:lower:].
+#
+# Syntax:
+#
+# ```sh
+# random_char_lower [length]
+# => random characters in class [:lower:]
+# ```
+#
+# Example:
+#
+# ```sh
+# random_char_lower 8
+# => pgfqrefo
+#```
+#
+random_char_lower() {
+        random_char '[:lower:]' "$@"
+}
+
+# random_char_lower_digit
+#
+# Random characters using classes [:lower:][:digit].
+#
+# Syntax:
+#
+# ```sh
+# random_char_lower_digit [length]
+# => random characters in classes [:lower:][:digit]
+# ```
+#
+# Example:
+#
+# ```sh
+# random_char_lower_digit 8
+# => 69m7o83i
+#```
+#
+random_char_lower_digit() {
+        random_char '[:lower:][:digit:]' "$@"
+}
+
+# random_char_upper
+#
+# Random characters using class [:upper:].
+#
+# Syntax:
+#
+# ```sh
+# random_char_upper [length]
+# => random characters in class [:upper:]
+# ```
+#
+# Example:
+#
+# ```sh
+# random_char_upper 8
+# => EGXUHNIM
+#```
+#
+random_char_upper() {
+        random_char '[:upper:]' "$@"
+}
+
+# random_char_upper_digit
+#
+# Random characters using classes [:upper:][:digit:].
+#
+# Syntax:
+#
+# ```sh
+# random_char_upper_digit [length]
+# => random characters in classes [:upper:][:digit]
+# ```
+#
+# Example:
+#
+# ```sh
+# random_char_upper_digit 8
+# => L2PT37H6
+#```
+#
+random_char_upper_digit() {
+        random_char '[:upper:][:digit:]' "$@"
+}
+
+# random_char_print
+#
+# Random characters using class [:print:].
+#
+# Syntax:
+#
+# ```sb
+# random_char_print [length]
+# => random characters in class [:print:]
+# ```
+#
+# Example:
+#
+# ```sh
+# random_char_print 8
+# => ),zN87K;
+#```
+#
+random_char_print() {
+        random_char '[:print:]' "$@"
+}
+
+# random_char_space
+#
+# Random characters using class [:space:].
+#
+# Syntax:
+#
+# ```sh
+# random_char_space [length]
+# => random characters in class [:space:]
+# ```
+#
+# Example:
+#
+# ```sh
+# random_char_space 8
+# => "\n \t\r \v \f"
+#```
+#
+random_char_space() {
+        random_char '[:space:]' "$@"
+}
+
+# random_char_xdigit
+#
+# Random characters using class [:xdigit:].
+#
+# Syntax:
+#
+# ```sh
+# random_char_xdigit [length]
+# => random characters in class [:xdigit:]
+# ```
+#
+# Example:
+#
+# ```sh
+# random_char_xdigit 8
+# => eC3Ce9eD
+#```
+#
+random_char_xdigit() {
+        random_char '[:xdigit:]' "$@"
+}
+
+##
+# Array helpers
+##
+
+# array_n
+#
+# Get the array number of fields a.k.a. length a.k.a. size.
+#
+# Syntax:
+#
+# ```sh
+# array_n <array>
+# => number of fields
+# ```
+#
+# Example:
+#
+# ```sh
+# set -- a b c d
+# array_n "$@"
+# => 4
+# ```
+#
+array_n() {
+        printf %s "$#"
+}
+
+# array_i
+#
+# Get the array element at index `i` which is 1-based.
+#
+# Syntax:
+#
+# ```sh
+# array_i <array> <index>
+# => array element at index
+# ```
+#
+# Example:
+#
+# ```sh
+# set -- a b c d
+# array_i "$@" 3
+# => c
+# ```
+#
+# POSIX syntax uses an array index that starts at 1.
+#
+# Bash syntax uses an array index that starts at 0.
+#
+# Bash syntax can have more power this way if you prefer it:
+#
+# ```sh
+# [# == 3 ] && awk -F "$2" "{print \$$3}" <<< "$1" || awk "{print \$$2}" <<< "$1"
+# ```
+#
+array_i() {
+        for __array_i_i in "$@"; do true; done
+        if [ "$__array_i_i" -ge 1 -a "$__array_i_i" -lt $# ]; then
+                __array_i_j=1
+                for __array_i_x in "$@"; do
+                        if [ "$__array_i_j" -eq "$__array_i_i" ]; then
+                                printf %s "$__array_i_x"
+                                return
+                        fi
+                        __array_i_j=$((__array_i_j+1))
+                done
+        fi
+        exit $EXIT_USAGE
+}
+
+# array_first
+#
+# Get the array's first element.
+#
+# Syntax:
+#
+# ```sh
+# array_first <array>
+# => array first element
+# ```
+#
+# Example:
+#
+# ```sh
+# set -- a b c d
+# array_first "$@"
+# => a
+# ```
+#
+array_first() {
+        printf %s "$1"
+}
+
+# array_last
+#
+# Get the array's last element.
+#
+# Syntax:
+#
+# ```sh
+# array_last <array>
+# => array last element
+# =>
+# ```
+#
+# Example:
+#
+# ```sh
+# set -- a b c d
+# array_last "$@"
+# => d
+# ```
+#
+array_last() {
+        for __array_last_x in "$@"; do true; done
+        printf %s "$__array_last_x"
+}
+
+# array_car
+#
+# Get the array's car element a.k.a. first item.
+#
+# Syntax:
+#
+# ```sh
+# array_car <array>
+# => array car element
+# ```
+#
+# Example:
+#
+# ```sh
+# set -- a b c d
+# array_car "$@"
+# => a
+# ```
+#
+array_car() {
+        printf %s "$1"
+}
+
+# array_cdr
+#
+# Get the array's cdr items a.k.a. everything after the first item.
+#
+# Syntax:
+#
+# ```sh
+# array_cdr <array>
+# => array cdr elements
+# ```
+#
+# Example:
+#
+# ```sh
+# set -- a b c
+# array_cdr "$@"
+# => b c d
+# ```
+#
+array_cdr() {
+        shift
+        printf %s "$*"
+}
+
+##
+# Make temp helpers
+##
+
+# mktemp_directory
+#
+# Create a temporary directory.
+#
+# Syntax:
+#
+# ```sh
+# mktemp_directory [base-directory]
+# =>  temporary directory path
+# ```
+#
+# Example:
+#
+# ```sh
+# mktemp_directory
+# => /tmp/4f7b65122b0fb65b0fdad568a65dc97d
+# ```
+#
+# Example with base directory:
+#
+# ```sh
+# mktemp_directory /foo/bar
+# => /foo/bar/4f7b65122b0fb65b0fdad568a65dc97d
+# ```
+#
+# The base directory uses the first available `$1` or `$TMPDIR` or `/tmp`.
+# If you provide a base directory, then it must already exist and be usable.
+# 
+# The mkdir command is atomic, and only reports success if it actually creates
+# the directory. So long as we do not use the -p option, we can be assured that
+# it actually creates a brand new directory, rather than following a symlink to
+# danger.
+#
+# Immediately after you make it, create a trap to remove it:
+#
+# ```sh
+# x=$(mktemp_directory)
+# cleanup() { test "$x" && rm -rf -- "$x"; }
+# trap cleanup EXIT HUP INT TERM 
+# ```
+#
+mktemp_directory() {
+        (
+                umask 077; set -C
+                x="${1:-${TMPDIR:-/tmp}}/$(zid)"
+                mkdir -m 700 -- "$x" >/dev/null 2>&1 && { printf '%s\n' "$x"; exit 0; }
+                exit 1
+        )
+}
+
+# mktemp_file
+#
+# Create a temporary file.
+#
+# Upon successful completion, return an open file descriptor. Otherwise, return 1.
+#
+# Syntax:
+#
+# ```sh
+# mktemp_file [base-directory]
+# =>  temporary file path
+# ```
+#
+# Example:
+#
+# ```sh
+# mktemp_file
+# => /tmp/1d9aafac5373be95d8b4c2dece0b1197
+# ```
+#
+# Example with base directory:
+#
+# ```sh
+# mktemp_file /foo/bar
+# => /foo/bar/1d9aafac5373be95d8b4c2dece0b1197
+# ```
+#
+# The base directory uses the first available `$1` or `$TMPDIR` or `/tmp`.
+# If you provide a base directory, then it must already exist and be usable.
+#
+# Immediately after you make it, create a trap to remove it:
+#
+# ```sh
+# x=$(mktemp_file)
+# cleanup() { test "$x" && rm -rf -- "$x"; }
+# trap cleanup EXIT HUP INT TERM 
+# ```
+#
+# ## implementation
+# 
+#  See https://mywiki.wooledge.org/BashFAQ/062
+#
+# To make this work safely, we must perform an atomic file creation. The way to
+# do this in a shell script is to turn on the noclobber option (set -C) and then
+# attempt an output redirection.
+# 
+# The m4 approach, although in POSIX, may not be an ideal solution in practice.
+# For example, the macOS m4 (March 2026) was too old to have the mkstemp macro.
+# 
+mktemp_file() {
+        (
+                umask 077; set -C
+                x="${1:-${TMPDIR:-/tmp}}/$(zid)"
+                ( : > "$x" ) >/dev/null 2>&1 && { printf '%s\n' "$x"; exit 0; }
+                exit 1
+        )
+}
+
+##
+# Media helpers
+##
+
+# file_media_type
+#
+# Get a file's media type a.k.a. mime type such as "text/plain".
+#
+# Syntax:
+#
+# ```sh
+# file_media_type <file_path>
+# => media type
+# ```
+#
+# Example:
+#
+# ```sh
+# file_media_type notes.txt
+# => text/plain
+# ```
+#
+file_media_type() {
+        file --brief --mime "$1"
+}
+
+# file_media_type_supertype
+#
+# Get a file's media type type a.k.a. mime type such as "text".
+#
+# Syntax:
+#
+# ```sh
+# file_media_type_supertype <file_path>
+# => media type supertype
+# ```
+#
+# Example:
+#
+# ```sh
+# file_media_type_supertype notes.txt
+# => text
+# ```
+#
+file_media_type_supertype() {
+        file --brief --mime "$1" | sed 's#/.*##'
+}
+
+# file_media_type_subtype
+#
+# Get a file's media type subtype a.k.a. mime type such as "plain".
+#
+# Syntax:
+#
+# ```sh
+# file_media_type_subtype <file_path>
+# => media type subtype
+# ```
+#
+# Example:
+#
+# ```sh
+# file_media_type_subtype notes.txt
+# => plain
+# ```
+#
+file_media_type_subtype() {
+        file --brief --mime "$1" | sed 's#^[^/]*/##; s#;.*##'
+}
+
+##
+# Font helpers
+##
+
+# font_name_exists
+#
+# Does a font name exist on this system?
+#
+# Syntax:
+#
+# ```sh
+# font_name_exists <font_name>
+# => true or false
+# ```
+#
+# Example:
+#
+# ```sh
+# font_name_exists Arial
+# => true
+#
+# font_name_exists Foo
+# => false
+# ```
+#
+font_name_exists() {
+        fc-list | grep -q ": $1:"
+}
+
+# font_name_exists_or_die
+#
+# Does a font name exist on this system? If no then die.
+#
+# Syntax:
+#
+# ```sh
+# font_name_exists_or_die <font_name>
+# => true or die
+# ```
+#
+# Example:
+#
+# ```sh
+# font_name_exists_or_die Arial
+# => true
+#
+# font_name_exists_or_die Foo
+# STDERR=> Font needed: Foo
+# EXIT=> $EXIT_UNAVAILABLE
+# ```
+#
+font_name_exists_or_die() {
+        font_name_exists "$1" || die "$EXIT_UNAVAILABLE" "Font needed: $1"
+}
+
+##
+# Content helpers
+##
+
+# file_ends_with_newline
+#
+# Does a file end with a newline?
+#
+# Syntax:
+#
+# ```sh
+# file_ends_with_newline <file_path>
+# => true or false
+# ```
+#
+# Example:
+#
+# ```sh
+# file_ends_with_newline notes.txt
+# => true
+# ```
+#
+file_ends_with_newline() {
+        test $(tail -c1 "$1" | wc -l) -gt 0
+}
+
+
+##
+# Directory helpers
+##
+
+# user_dir
+#
+# Get a user-specific directory via env var, or XDG setting, or HOME.
+#
+# Syntax:
+#
+# ```sh
+# user_dir <directory_locator>
+# => directory path
+# ```
+#
+# Example:
+#
+# ```sh
+# user_dir foo => $FOO_DIR || $FOO_HOME || $XDG_FOO_DIR || $XDG_FOO_HOME || $HOME/foo
+# ```
+#
+# Conventions:
+#
+#   * `user_dir bin` => binary executable directory
+#   * `user_dir cache` => cache directory
+#   * `user_dir config` => configuration directory
+#   * `user_dir data` => data directory
+#   * `user_dir desktop` => desktop directory
+#   * `user_dir documents` => documents directory
+#   * `user_dir download` => download directory
+#   * `user_dir log` => logging directory
+#   * `user_dir music` => music directory
+#   * `user_dir pictures` => pictures directory
+#   * `user_dir publicshare` => public share directory
+#   * `user_dir runtime` => runtime directory
+#   * `user_dir state` => state directory
+#   * `user_dir temp` => temporary directory
+#   * `user_dir templates` => templates directory
+#   * `user_dir videos` => videos directory
+#
+# Popular XDG conventions:
+#
+#   * `XDG_DESKTOP_DIR` => user-specific desktop, such as frequent apps and files.
+#   * `XDG_DOCUMENTS_DIR` => user-specific documents, such as typical working files.
+#   * `XDG_DOWNLOAD_DIR` => user-specific downloads, such as internet file downloads.
+#   * `XDG_MUSIC_DIR` => user-specific music files, such as songs.
+#   * `XDG_PICTURES_DIR` => user-specific pictures, such as photos.
+#   * `XDG_PUBLICSHARE_DIR` => user-specific public share, such as file sharing.
+#   * `XDG_TEMPLATES_DIR` => user-specific templates.
+#   * `XDG_VIDEOS_DIR` => user-specific videos, such as movies.
+#
+# POSIX XDG conventions:
+#
+#   * `XDG_BIN_HOME` => user-specific binaries, analogous to system /usr/bin or $HOME/.local/bin.
+#   * `XDG_LOG_HOME` => user-specific log files, analogous to system /var/log or $HOME/.local/log.
+#   * `XDG_TEMP_HOME` => user-specific temporary files, analogous to system /temp or $HOME/.temp.
+#   * `XDG_DATA_HOME` => user-specific data files, analogous to system /usr/share or $HOME/.local/share.
+#   * `XDG_CACHE_HOME` => user-specific cache files, analogous to system /var/cache or $HOME/.cache.
+#   * `XDG_STATE_HOME` => user-specific cache files, analogous to system /var/state or $HOME/.local/state.
+#   * `XDG_CONFIG_HOME` => user-specific configuration files, analogous to system /etc or $HOME/.config.
+#   * `XDG_RUNTIME_HOME` => user-specific runtime files such as sockets, named pipes, etc. or $HOME/.runtime.
+#
+# See also:
+#
+#   * https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
+#
+#   * https://wiki.archlinux.org/title/XDG_user_directories
+#
+user_dir(){
+	upper=$(printf %s\\n "$1" | tr '[:lower:]' '[:upper:]')
+	x=$(set +u; eval printf "%s\\\\n" \$${upper}_DIR)
+        if [ -n "$x" ]; then printf %s\\n "$x"; return; fi
+	x=$(set +u; eval printf "%s\\\\n" \$${upper}_HOME)
+        if [ -n "$x" ]; then printf %s\\n "$x"; return; fi
+	x=$(set +u; eval printf "%s\\\\n" \$XDG_${upper}_DIR)
+        if [ -n "$x" ]; then printf %s\\n "$x"; return; fi
+	x=$(set +u; eval printf "%s\\\\n" \$XDG_${upper}_HOME)
+        if [ -n "$x" ]; then printf %s\\n "$x"; return; fi
+	lower=$(printf %s\\n "$1" | tr '[:upper:]' '[:lower:]')
+        printf %s\\n "$HOME/$lower"
+}
+
+##
+# Assert testing
+##
+
+# assert_test
+#
+# Assert a test utility command succeeds.
+#
+# Syntax:
+#
+# ```sh
+# assert_test <condition>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_test -x program.sh
+# => success i.e. no output
+#
+# assert_test -x notes.txt
+# STDERR=> assert_test -x notes.txt
+# ```
+#
+assert_test() {
+        test "$1" "$2" || err assert_test "$@"
+}
+
+# assert_empty
+#
+# Assert a value is empty.
+#
+# Syntax:
+#
+# ```sh
+# assert_empty <value>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_empty ""
+# => success i.e. no output
+#
+# assert_empty foo
+# STDERR=> assert_empty foo
+# ```
+#
+assert_empty() {
+        [ -z "$1" ] || err assert_empty "$@"
+}
+
+# assert_not_empty
+#
+# Assert a value is not empty.
+#
+# Syntax:
+#
+# ```sh
+# assert_not_empty <value>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_not_empty foo
+# => success i.e. no output
+#
+# assert_not_empty ""
+# STDERR=> assert_not_empty
+# ```
+#
+assert_not_empty() {
+        [ -z "$1" ] || err assert_not_empty "$@"
+}
+
+# assert_int_eq
+#
+# Assert an integer is equal to another integer.
+#
+# Syntax:
+#
+# ```sh
+# assert_int_eq <int> <int>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_int_eq 1 1
+# => success i.e. no output
+#
+# assert_int_eq 1 2
+# STDERR=> assert_int_eq 1 2
+# ```
+#
+assert_int_eq() {
+        [ "$1" -eq "$2" ] || err assert_int_eq "$@"
+}
+
+# assert_int_ne
+#
+# Assert an integer is not equal to another integer.
+#
+# Syntax:
+#
+# ```sh
+# assert_int_ne <int> <int>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_int_eq 1 2
+# => success i.e. no output
+#
+# assert_int_eq 1 1
+# STDERR=> assert_int_ne 1 1
+# ```
+#
+assert_int_ne() {
+        [ "$1" -ne "$2" ] || err assert_int_equal "$@"
+}
+
+# assert_int_ge
+#
+# Assert an integer is greater than or equal to another integer.
+#
+# Syntax:
+#
+# ```sh
+# assert_int_ge <int> <int>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_int_ge 2 1
+# => success i.e. no output
+#
+# assert_int_ge 1 2
+# STDERR=> assert_int_ge 1 2
+# ```
+#
+assert_int_ge() {
+        [ "$1" -ge "$2" ] || err assert_int_ge "$@"
+}
+
+# assert_int_gt
+#
+# Assert an integer is greater than another integer.
+#
+# Syntax:
+#
+# ```sh
+# assert_int_gt <int> <int>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_int_gt 2 1
+# => success i.e. no output
+#
+# assert_int_gt 1 2
+# STDERR=> assert_int_gt 1 2
+# ```
+#
+assert_int_gt() {
+        [ "$1" -gt "$2" ] || err assert_int_gt "$@"
+}
+
+# assert_int_le
+#
+# Assert an integer is less than or equal to another integer.
+#
+# Syntax:
+#
+# ```sh
+# assert_int_le <int> <int>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_int_le 1 2
+# => success i.e. no output
+#
+# assert_int_le 2 1
+# STDERR=> assert_int_le 2 1
+# ```
+#
+assert_int_le() {
+        [ "$1" -le "$2" ] || err assert_int_le "$@"
+}
+
+# assert_int_lt
+#
+# Assert an integer is less than to another integer.
+#
+# Syntax:
+#
+# ```sh
+# assert_int_lt <int> <int>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_int_lt 1 2
+# => success i.e. no output
+#
+# assert_int_lt 2 1
+# STDERR=> assert_int_lt 2 1
+# ```
+#
+assert_int_lt() {
+        [ "$1" -lt "$2" ] || err assert_int_lt "$@"
+}
+
+# assert_str_eq
+#
+# Assert a string is equal to another string.
+#
+# Syntax:
+#
+# ```sh
+# assert_str_eq <string> <string>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_str_eq 1 1
+# => success i.e. no output
+#
+# assert_str_eq 1 2
+# STDERR=> assert_str_eq 1 2
+# ```
+#
+assert_str_eq() {
+        [ "$1" -eq "$2" ] || err assert_str_eq "$@"
+}
+
+# assert_str_ne
+#
+# Assert a string is not equal to another string.
+#
+# Syntax:
+#
+# ```sh
+# assert_str_ne <string> <string>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_str_eq 1 2
+# => success i.e. no output
+#
+# assert_str_eq 1 1
+# STDERR=> assert_str_ne 1 1
+# ```
+#
+assert_str_ne() {
+        [ "$1" -ne "$2" ] || err assert_str_equal "$@"
+}
+
+# assert_str_ge
+#
+# Assert a string is greater than or equal to another string.
+#
+# Syntax:
+#
+# ```sh
+# assert_str_ge <string> <string>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_str_ge 2 1
+# => success i.e. no output
+#
+# assert_str_ge 1 2
+# STDERR=> assert_str_ge 1 2
+# ```
+#
+assert_str_ge() {
+        [ "$1" -ge "$2" ] || err assert_str_ge "$@"
+}
+
+# assert_str_gt
+#
+# Assert a string is greater than another string.
+#
+# Syntax:
+#
+# ```sh
+# assert_str_gt <string> <string>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_str_gt 2 1
+# => success i.e. no output
+#
+# assert_str_gt 1 2
+# STDERR=> assert_str_gt 1 2
+# ```
+#
+assert_str_gt() {
+        [ "$1" -gt "$2" ] || err assert_str_gt "$@"
+}
+
+# assert_str_le
+#
+# Assert a string is less than or equal to another string.
+#
+# Syntax:
+#
+# ```sh
+# assert_str_le <string> <string>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_str_le 1 2
+# => success i.e. no output
+#
+# assert_str_le 2 1
+# STDERR=> assert_str_le 2 1
+# ```
+#
+assert_str_le() {
+        [ "$1" -le "$2" ] || err assert_str_le "$@"
+}
+
+# assert_str_lt
+#
+# Assert a string is less than to another string.
+#
+# Syntax:
+#
+# ```sh
+# assert_str_lt <string> <string>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_str_lt 1 2
+# => success i.e. no output
+#
+# assert_str_lt 2 1
+# STDERR=> assert_str_lt 2 1
+# ```
+#
+assert_str_lt() {
+        [ "$1" -lt "$2" ] || err assert_str_lt "$@"
+}
+
+# assert_str_starts_with
+#
+# Assert a string starts with a substring.
+#
+# Syntax:
+#
+# ```sh
+# assert_str_starts_with <string> <substring>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_str_starts_with foobar foo
+# => success i.e. no output
+#
+# assert_str_starts_with foobar xxx
+# STDERR=> assert_str_starts_with foobar xxx
+# ```
+#
+assert_str_starts_with() {
+        [ "$1" != "${1#"$2"}" ] || err assert_str_starts_with "$@"
+}
+
+# assert_str_ends_with
+#
+# Assert a string ends with with a substring.
+#
+# Syntax:
+#
+# ```sh
+# assert_str_ends_with <string> <substring>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_str_ends_with foobar bar
+# => success i.e. no output
+#
+# assert_str_ends_with foobar xxx
+# STDERR=> assert_str_ends_with foobar xxx
+# ```
+#
+assert_str_ends_with() {
+        [ "$1" != "${1%"$2"}" ] || err assert_str_ends_with "$@"
+}
+
+# assert_eval_int_eq_x
+#
+# Assert an eval into an integer is equal to an expression.
+#
+# Syntax:
+#
+# ```sh
+# assert_eval_int_eq_x <eval_expression> <integer>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_eval_int_eq_x 'echo "1"' 1
+# => success i.e. no output
+#
+# assert_eval_int_eq_x 'echo "1"' 2
+# STDERR=> assert_eval_int_eq_x echo "1" 2
+# ```
+#
+assert_eval_int_eq_x() {
+	if [ ! "$(eval "$1")" -eq "$2" ]; then
+                err assert_eval_int_eq_x "$@"
+	fi
+}
+
+# assert_eval_str_eq_x
+#
+# Assert an eval into a string is equal to an expression.
+#
+# Syntax:
+#
+# ```sh
+# assert_eval_str_eq_x <eval_expression> <string>
+# => success or error
+# ```
+#
+# Example:
+#
+# ```sh
+# assert_eval_str_eq_x 'echo "foo"' foo
+# => success i.e. no output
+#
+# assert_eval_str_eq_x 'echo "foo"' bar
+# STDERR=> assert_eval_str_eq_x echo "foo" bar
+# ```
+#
+assert_eval_str_eq_x() {
+	if [ ! "$(eval "$1")" = "$2" ]; then
+                err assert_eval_str_eq_x "$@"
+	fi
+}

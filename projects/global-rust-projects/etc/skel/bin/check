@@ -1,0 +1,5 @@
+#!/bin/sh
+# Check everything using cargo check and anything else.
+set -euf
+BASE=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd -P) && cd "$BASE"
+cargo check

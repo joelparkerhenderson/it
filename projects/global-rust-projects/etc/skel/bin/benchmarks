@@ -1,0 +1,9 @@
+#!/bin/sh
+# Measure benchmarks using cargo-criterion crate.
+set -euf
+BASE=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd -P) && cd "$BASE"
+dst="docs/benchmarks" && cd "$dst"
+cargo criterion --message-format=json | criterion-table > "$dst/index.md"
+ln -sfn index.md README.md
+git add .
+git commit --no-verify -m "Update $dst" "$dst"

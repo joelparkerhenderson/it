@@ -1,0 +1,20 @@
+#!/bin/sh
+# Run the same checks CI runs: format, lint, test, docs.
+set -euf
+BASE=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd -P) && cd "$BASE"
+
+export RUSTDOCFLAGS="${RUSTDOCFLAGS:--D warnings}"
+
+echo "==> module coverage"
+bin/check-modules
+echo "==> cargo fmt --check"
+cargo fmt --all -- --check
+echo "==> cargo clippy"
+cargo clippy --all-targets --all-features -- -D warnings
+echo "==> cargo test"
+cargo test --all-targets --all-features
+cargo test --doc --all-features
+echo "==> cargo doc"
+cargo doc --no-deps --all-features
+echo "==> benchmarks compile"
+cargo bench --no-run

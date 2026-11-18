@@ -1,0 +1,8 @@
+#!/bin/sh
+# Measure test coverage with cargo-tarpaulin crate.
+set -euf
+BASE=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd -P) && cd "$BASE"
+dst="docs/coverage" && cd "$dst"
+cargo tarpaulin --config tarpaulin.toml
+git add .
+git commit -m "Update $dst" "$dst"
